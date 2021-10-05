@@ -26,9 +26,8 @@ extern int nbVM;
 //#
 //# Affiche une série de retour de ligne pour "nettoyer" la console
 //#
-void cls(void){
-	printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-	}
+
+#define cls() system("clear");
 
 //#######################################
 //#
