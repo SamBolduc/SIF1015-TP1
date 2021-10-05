@@ -14,33 +14,25 @@
 #include "gestionListeChaineeVMS.h"
 #include "gestionVMS.h"
 
-//Pointeur de tête de liste
-extern struct noeud* head;
-//Pointeur de queue de liste pour ajout rapide
-extern struct noeud* queue;
+#include <linux/limits.h>
 
-// nombre de VM actives
-extern int nbVM;
+#define cls() system("clear")
 
-//#######################################
-//#
-//# Affiche une série de retour de ligne pour "nettoyer" la console
-//#
-
-#define cls() system("clear");
+extern noeudVM* head;  //Pointeur de tête de liste
+extern noeudVM* queue; //Pointeur de queue de liste pour ajout rapide
+extern int nbVM;       // nombre de VM actives
 
 //#######################################
 //#
-//# Affiche un messgae et quitte le programme
+//# Affiche un message et quitte le programme
 //#
-void error(const int exitcode, const char * message){
-	printf("\n-------------------------\n%s\n",message);
+void error(const int exitcode, const char *message) {
+	printf("\n-------------------------\n%s\n", message);
 	exit(exitcode);
-	}
+}
 	
 /* Sign Extend */
-uint16_t sign_extend(uint16_t x, int bit_count)
-{
+uint16_t sign_extend(uint16_t x, int bit_count) {
     if ((x >> (bit_count - 1)) & 1) {
         x |= (0xFFFF << bit_count);
     }
@@ -48,58 +40,49 @@ uint16_t sign_extend(uint16_t x, int bit_count)
 }
 
 /* Swap */
-uint16_t swap16(uint16_t x)
-{
+uint16_t swap16(uint16_t x) {
     return (x << 8) | (x >> 8);
 }
 
 /* Update Flags */
-void update_flags(uint16_t reg[R_COUNT], uint16_t r)
-{
-    if (reg[r] == 0)
-    {
+void update_flags(uint16_t reg[R_COUNT], uint16_t r) {
+    if (reg[r] == 0) {
         reg[R_COND] = FL_ZRO;
-    }
-    else if (reg[r] >> 15) /* a 1 in the left-most bit indicates negative */
-    {
+    } else if (reg[r] >> 15) { /* a 1 in the left-most bit indicates negative */
         reg[R_COND] = FL_NEG;
-    }
-    else
-    {
+    } else {
         reg[R_COND] = FL_POS;
     }
 }
 
 /* Read Image File */
-int read_image_file(uint16_t * memory, char* image_path,uint16_t * origin)
-{
-	 char fich[200];
-	 strcpy(fich,image_path);
-  	 FILE* file = fopen(fich, "rb");
+bool read_image_file(uint16_t *memory, char *image_path, uint16_t *origin) {
+	char fich[PATH_MAX];
+	strcpy(fich, image_path);
+  	FILE* file = fopen(fich, "rb");
  
-    if (!file) { return 0; }
+    if (!file) return false;
     /* the origin tells us where in memory to place the image */
-   	*origin=0x3000;
+   	*origin = VM_IMAGE_OFFSET;
 
     /* we know the maximum file size so we only need one fread */
     uint16_t max_read = UINT16_MAX - *origin;
-    uint16_t* p = memory + *origin;
-    size_t read = fread(p, sizeof(uint16_t), max_read, file);
-    /* swap to little endian ???? */
-    while (read-- > 0)
-    {
-    //	printf("\n p * BIG = %x",*p);
-       // *p = swap16(*p);
+    uint16_t *p = memory + *origin;
+    //size_t read = fread(p, sizeof(uint16_t), max_read, file);
+    fread(p, sizeof(uint16_t), max_read, file);
+    /* swap to little endian ???? 
+    while (read-- > 0) {
+        //	printf("\n p * BIG = %x",*p);
+        // *p = swap16(*p);
 		// printf("\n p * LITTLE = %x",*p);
         ++p;
-    }
-    return 1;
+    }*/
+    return true;
 }
 
 
 /* Check Key */
-uint16_t check_key()
-{
+uint16_t check_key() {
     fd_set readfds;
     FD_ZERO(&readfds);
     FD_SET(STDIN_FILENO, &readfds);
@@ -111,22 +94,16 @@ uint16_t check_key()
 }
 
 /* Memory Access */
-void mem_write(uint16_t * memory, uint16_t address, uint16_t val)
-{
+void mem_write(uint16_t *memory, uint16_t address, uint16_t val) {
     memory[address] = val;
 }
 
-uint16_t mem_read( uint16_t * memory, uint16_t address)
-{
-    if (address == MR_KBSR)
-    {
-        if (check_key())
-        {
+uint16_t mem_read( uint16_t *memory, uint16_t address) {
+    if (address == MR_KBSR) { // mmio
+        if (check_key()) {
             memory[MR_KBSR] = (1 << 15);
             memory[MR_KBDR] = getchar();
-        }
-        else
-        {
+        } else {
             memory[MR_KBSR] = 0;
         }
     }
@@ -136,28 +113,23 @@ uint16_t mem_read( uint16_t * memory, uint16_t address)
 /* Input Buffering */
 struct termios original_tio;
 
-void disable_input_buffering()
-{
+void disable_input_buffering() {
     tcgetattr(STDIN_FILENO, &original_tio);
     struct termios new_tio = original_tio;
     new_tio.c_lflag &= ~ICANON & ~ECHO;
     tcsetattr(STDIN_FILENO, TCSANOW, &new_tio);
 }
 
-void restore_input_buffering()
-{
+void restore_input_buffering() {
     tcsetattr(STDIN_FILENO, TCSANOW, &original_tio);
 }
 
 /* Handle Interrupt */
-void handle_interrupt(int signal)
-{
+void handle_interrupt(int signal) {
     restore_input_buffering();
     printf("\n");
     exit(-2);
 }
-
-
 
 //#######################################
 //#
@@ -167,29 +139,25 @@ int executeFile(int noVM, char* sourcefname){
 
 /* Memory Storage */
 /* 65536 locations */
-	uint16_t *  memory;
-	uint16_t origin;
-	uint16_t PC_START;
+	uint16_t *memory;
+	uint16_t origin, PC_START;
 	
 /* Register Storage */
 	uint16_t reg[R_COUNT];
 	
-    struct noeudVM * ptr =  findItem(noVM);
+    struct noeudVM *ptr = findItem(noVM);
 	
-    if(ptr == NULL)
-    {
+    if(!ptr) {
         printf("Virtual Machine unavailable\n");
         return(0);
     }	
 	memory = ptr->VM.ptrDebutVM;
-    if (!read_image_file(memory, sourcefname, &origin))
-    {
+    if (!read_image_file(memory, sourcefname, &origin)) {
         printf("Failed to load image: %s\n", sourcefname);
         return(0);
     }
 	
-    while(ptr->VM.busy != 0){ // wait for the VM 
-    }
+    while(ptr->VM.busy); // wait for the VM 
 	// Acquiring access to the VM
     ptr->VM.busy = 1;
     
@@ -204,8 +172,7 @@ int executeFile(int noVM, char* sourcefname){
     reg[R_PC] = PC_START;
 
     int running = 1;
-    while (running)
-    {
+    while (running) {
         /* FETCH */
         uint16_t instr = mem_read(memory, reg[R_PC]++);
 // printf("\n instr = %x", instr);
@@ -213,8 +180,7 @@ int executeFile(int noVM, char* sourcefname){
 	
 // printf("\n exe op = %x", op);
 
-        switch (op)
-        {
+        switch (op) {
             case OP_ADD:
                 /* ADD */
                 {
@@ -225,18 +191,15 @@ int executeFile(int noVM, char* sourcefname){
                     /* whether we are in immediate mode */
                     uint16_t imm_flag = (instr >> 5) & 0x1;
                 
-                    if (imm_flag)
-                    {
+                    if (imm_flag) {
                         uint16_t imm5 = sign_extend(instr & 0x1F, 5);
                         reg[r0] = reg[r1] + imm5;
-                    }
-                    else
-                    {
+                    } else {
                         uint16_t r2 = instr & 0x7;
                         reg[r0] = reg[r1] + reg[r2];
- printf("\n add reg[r0] (sum) = %d", reg[r0]);
- //printf("\t add reg[r1] (sum avant) = %d", reg[r1]);
- //printf("\t add reg[r2] (valeur ajoutee) = %d", reg[r2]);
+                        printf("\n add reg[r0] (sum) = %d", reg[r0]);
+                        //printf("\t add reg[r1] (sum avant) = %d", reg[r1]);
+                        //printf("\t add reg[r2] (valeur ajoutee) = %d", reg[r2]);
                     }
                 
                     update_flags(reg, r0);
@@ -250,13 +213,10 @@ int executeFile(int noVM, char* sourcefname){
                     uint16_t r1 = (instr >> 6) & 0x7;
                     uint16_t imm_flag = (instr >> 5) & 0x1;
                 
-                    if (imm_flag)
-                    {
+                    if (imm_flag) {
                         uint16_t imm5 = sign_extend(instr & 0x1F, 5);
                         reg[r0] = reg[r1] & imm5;
-                    }
-                    else
-                    {
+                    } else {
                         uint16_t r2 = instr & 0x7;
                         reg[r0] = reg[r1] & reg[r2];
                     }
@@ -280,8 +240,7 @@ int executeFile(int noVM, char* sourcefname){
                 {
                     uint16_t pc_offset = sign_extend(instr & 0x1FF, 9);
                     uint16_t cond_flag = (instr >> 9) & 0x7;
-                    if (cond_flag & reg[R_COND])
-                    {
+                    if (cond_flag & reg[R_COND]) {
                         reg[R_PC] += pc_offset;
                     }
                 }
@@ -301,13 +260,10 @@ int executeFile(int noVM, char* sourcefname){
                 {
                     uint16_t long_flag = (instr >> 11) & 1;
                     reg[R_R7] = reg[R_PC];
-                    if (long_flag)
-                    {
+                    if (long_flag) {
                         uint16_t long_pc_offset = sign_extend(instr & 0x7FF, 11);
                         reg[R_PC] += long_pc_offset;  /* JSR */
-                    }
-                    else
-                    {
+                    } else {
                         uint16_t r1 = (instr >> 6) & 0x7;
                         reg[R_PC] = reg[r1]; /* JSRR */
                     }
@@ -389,8 +345,7 @@ int executeFile(int noVM, char* sourcefname){
                 break;
             case OP_TRAP:
                 /* TRAP */
-                switch (instr & 0xFF)
-                {
+                switch (instr & 0xFF) {
                     case TRAP_GETC:
                         /* TRAP GETC */
                         /* read a single ASCII char */
@@ -408,8 +363,7 @@ int executeFile(int noVM, char* sourcefname){
                         {
                             /* one char per word */
                             uint16_t* c = memory + reg[R_R0];
-                            while (*c)
-                            {
+                            while (*c) {
                                 putc((char)*c, stdout);
                                 ++c;
                             }
@@ -434,8 +388,7 @@ int executeFile(int noVM, char* sourcefname){
                                here we need to swap back to
                                big endian format */
                             uint16_t* c = memory + reg[R_R0];
-                            while (*c)
-                            {
+                            while (*c) {
                                 char char1 = (*c) & 0xFF;
                                 putc(char1, stdout);
                                 char char2 = (*c) >> 8;
@@ -477,57 +430,58 @@ int executeFile(int noVM, char* sourcefname){
 //# fonction utilisée pour le traitement  des transactions
 //# ENTREE: Nom de fichier de transactions 
 //# SORTIE: 
-void* readTrans(char* nomFichier){
+void* readTrans(char* nomFichier) {
 	FILE *f;
 	char buffer[100];
 	char *tok, *sp;
 
 	//Ouverture du fichier en mode "r" (equiv. "rt") : [r]ead [t]ext
 	f = fopen(nomFichier, "rt");
-	if (f==NULL)
-		error(2, "readTrans: Erreur lors de l'ouverture du fichier.");
+	if (!f) error(2, "readTrans: Erreur lors de l'ouverture du fichier.");
 
 	//Lecture (tentative) d'une ligne de texte
 	fgets(buffer, 100, f);
 
 	//Pour chacune des lignes lues
-	while(!feof(f)){
+	while(!feof(f)) {
 
 		//Extraction du type de transaction
 		tok = strtok_r(buffer, " ", &sp);
 
 		//Branchement selon le type de transaction
-		switch(tok[0]){
+		switch(tok[0]) {
 			case 'A':
-			case 'a':{
+			case 'a':
 				//Appel de la fonction associée
 				addItem(); // Ajout de une VM
 				break;
-				}
 			case 'E':
-			case 'e':{
-				//Extraction du paramètre
-				int noVM = atoi(strtok_r(NULL, " ", &sp));
-				//Appel de la fonction associée
-				removeItem(noVM); // Eliminer une VM
-				break;
+			case 'e':
+                {
+                    //Extraction du paramètre
+                    int noVM = atoi(strtok_r(NULL, " ", &sp));
+                    //Appel de la fonction associée
+                    removeItem(noVM); // Eliminer une VM
+                    break;
 				}
 			case 'L':
-			case 'l':{
-				//Extraction des paramètres
-				int nstart = atoi(strtok_r(NULL, "-", &sp));
-				int nend = atoi(strtok_r(NULL, " ", &sp));
-				//Appel de la fonction associée
-				listItems(nstart, nend); // Lister les VM
-				break;
+			case 'l':
+                {
+				    //Extraction des paramètres
+                    int nstart = atoi(strtok_r(NULL, "-", &sp));
+                    int nend = atoi(strtok_r(NULL, " ", &sp));
+                    //Appel de la fonction associée
+                    listItems(nstart, nend); // Lister les VM
+                    break;
 				}
 			case 'X':
-			case 'x':{
-				//Appel de la fonction associée
-				int noVM = atoi(strtok_r(NULL, " ", &sp));
-				char *nomfich = strtok_r(NULL, "\n", &sp);
-				executeFile(noVM, nomfich); // Executer le code binaire du fichier nomFich sur la VM noVM
-				break;
+			case 'x':
+                {
+                    //Appel de la fonction associée
+                    int noVM = atoi(strtok_r(NULL, " ", &sp));
+                    char *nomfich = strtok_r(NULL, "\n", &sp);
+                    executeFile(noVM, nomfich); // Executer le code binaire du fichier nomFich sur la VM noVM
+                    break;
 				}
 		}
 		//Lecture (tentative) de la prochaine ligne de texte
