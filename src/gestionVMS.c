@@ -164,7 +164,11 @@ void handle_interrupt(int signal)
 //#
 //# Execute le fichier de code .obj 
 //#
-int executeFile(int noVM, char* sourcefname){
+void* executeFile(void* arg){
+
+    struct execute_file_args *args = arg;
+    int noVM = args->noVM;
+    char* sourcefname = args->fileName;
 
 /* Memory Storage */
 /* 65536 locations */
@@ -180,13 +184,13 @@ int executeFile(int noVM, char* sourcefname){
     if(ptr == NULL)
     {
         printf("Virtual Machine unavailable\n");
-        return(0);
+        return (void*)0;
     }	
 	memory = ptr->VM.ptrDebutVM;
     if (!read_image_file(memory, sourcefname, &origin))
     {
         printf("Failed to load image: %s\n", sourcefname);
-        return(0);
+        return (void*)0;
     }
 	
     while(ptr->VM.busy != 0){ // wait for the VM 
@@ -469,7 +473,7 @@ int executeFile(int noVM, char* sourcefname){
     ptr->VM.busy = 0;
     /* Shutdown */
     restore_input_buffering();
-    return(1);
+    return (void*)1;
 }
 
 
@@ -533,7 +537,13 @@ void* readTrans(char* nomFichier){
                 //Appel de la fonction associée
                 int noVM = atoi(strtok_r(NULL, " ", &sp));
                 char *nomfich = strtok_r(NULL, "\n", &sp);
-                executeFile(noVM, nomfich); // Executer le code binaire du fichier nomFich sur la VM noVM
+
+                struct execute_file_args *args = malloc(sizeof(struct execute_file_args));
+                args->noVM = noVM;
+                args->fileName = nomfich;
+
+                pthread_create(&thread_id, NULL, &executeFile, args); //Executer le code binaire du fichier nomFich sur la VM noVM
+                
                 break;
                 }
         }
