@@ -18,8 +18,8 @@
 
 #define cls() system("clear")
 
-extern noeudVM* head;  //Pointeur de tête de liste
-extern noeudVM* queue; //Pointeur de queue de liste pour ajout rapide
+extern linkedList* head;  //Pointeur de tête de liste
+extern linkedList* queue; //Pointeur de queue de liste pour ajout rapide
 extern int nbVM;       // nombre de VM actives
 
 //#######################################
@@ -145,21 +145,21 @@ int executeFile(int noVM, char* sourcefname){
 /* Register Storage */
 	uint16_t reg[R_COUNT];
 	
-    struct noeudVM *ptr = findItem(noVM);
+    linkedList *ptr = findItem(noVM);
 	
     if(!ptr) {
         printf("Virtual Machine unavailable\n");
         return(0);
     }	
-	memory = ptr->VM.ptrDebutVM;
+	memory = ((infoVM*)ptr->data)->ptrDebutVM;
     if (!read_image_file(memory, sourcefname, &origin)) {
         printf("Failed to load image: %s\n", sourcefname);
         return(0);
     }
 	
-    while(ptr->VM.busy); // wait for the VM 
+    while(((infoVM*)ptr->data)->busy); // wait for the VM 
 	// Acquiring access to the VM
-    ptr->VM.busy = 1;
+    ((infoVM*)ptr->data)->busy = 1;
     
     /* Setup */
     signal(SIGINT, handle_interrupt);
@@ -418,12 +418,11 @@ int executeFile(int noVM, char* sourcefname){
                 break;
         }
     }
-    ptr->VM.busy = 0;
+    ((infoVM*)ptr->data)->busy = 0;
     /* Shutdown */
     restore_input_buffering();
     return(1);
 }
-
 
 //#######################################
 //#

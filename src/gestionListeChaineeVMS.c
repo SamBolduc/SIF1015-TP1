@@ -14,8 +14,8 @@
 #include "gestionListeChaineeVMS.h"
 #include "gestionVMS.h"
 
-extern noeudVM* head;  //Pointeur de tête de liste
-extern noeudVM* queue; //Pointeur de queue de liste pour ajout rapide
+extern linkedList* head;  //Pointeur de tête de liste
+extern linkedList* queue; //Pointeur de queue de liste pour ajout rapide
 extern int nbVM;       // nombre de VM actives
 
 //#######################################
@@ -25,17 +25,17 @@ extern int nbVM;       // nombre de VM actives
 //# 		Retourne NULL dans le cas où l'item
 //#			est introuvable
 //#
-noeudVM* findItem(const int no){
+linkedList* findItem(const int no){
 	int i;
 	//La liste est vide 
 	if ((!head)&&(!queue)) return NULL;
 
 	//Pointeur de navigation
-	noeudVM *ptr = head;
+	linkedList *ptr = head;
 	//Tant qu'un item suivant existe
 	for (i = 1; i < no && ptr; i++) {
 		//Déplacement du pointeur de navigation
-		ptr = ptr->suivant;
+		ptr = ptr->next;
 	}
 	//On retourne un pointeur NULL
 	return ptr;
@@ -48,8 +48,43 @@ noeudVM* findItem(const int no){
 //# RETOUR:	Le pointeur vers le prédécesseur est retourné		
 //# 		Retourne NULL dans le cas où l'item est introuvable
 //#
-noeudVM* findPrev(const int no){
+linkedList* findPrev(const int no){
 	return findItem(no - 1);
+}
+
+linkedList* appendToLinkedList(linkedList** List, void* newData, size_t dataSize){
+    if (List){
+        while (*List){
+            List = (linkedList**)&(*List)->next;
+        }
+        (*List) = (linkedList*)malloc(sizeof(linkedList));
+        (*List)->data = malloc(dataSize);
+        (*List)->next = NULL;
+
+        memcpy((*List)->data, newData, dataSize);
+
+        return *List;
+    }
+
+    return NULL;
+}
+
+void deleteLinkedListNode(linkedList** node){
+    linkedList* nextNode = (linkedList*)(*node)->next;
+    free((*node));
+    *node = nextNode;
+}
+
+void freeLinkedList(linkedList** List){
+    if (List){
+        if (*List){
+            if ((*List)->next){
+                freeLinkedList((linkedList**)&(*List)->next);
+            }
+            free(*List);
+            *List = NULL;
+        }
+    }
 }
 
 //#####################################################
@@ -58,88 +93,33 @@ noeudVM* findPrev(const int no){
 //#	RETOUR:  
 void addItem() {
 	//Création de l'enregistrement en mémoire
-	noeudVM* ni = (noeudVM*)malloc(sizeof(noeudVM));
-	
-	//printf("\n noVM=%d busy=%d adr ni=%p", ni->VM.noVM, ni->VM.busy, ni);
-	//printf("\n noVM=%d busy=%d adrQ deb=%p", ni->VM.noVM, ni->VM.busy,queue);
+	infoVM* newVM = (infoVM*)malloc(sizeof(infoVM));
 
 	//Affectation des valeurs des champs
-	/* ni->VM.noVM	= */ ++nbVM;
-	//printf("\n noVM=%d", ni->VM.noVM);
-	ni->VM.busy	= 0;
-	//printf("\n busy=%d", ni->VM.busy);
-	ni->VM.ptrDebutVM = (unsigned short*)malloc(sizeof(unsigned short)*VM_SEGMENT_SIZE);
-	//printf("\n noVM=%d busy=%d adrptr VM=%p", ni->VM.noVM, ni->VM.busy, ni->VM.ptrDebutVM);
-	//printf("\n noVM=%d busy=%d adrQ=%p", ni->VM.noVM, ni->VM.busy, queue);
-	ni->suivant = NULL;
-	if ((!head) && (!queue)){ //liste vide
-	  queue = head = ni;
-	  return;
-	}
-	((noeudVM*)queue)->suivant = ni;
-	queue = ni;
-	//printf("\n noVM=%d busy=%d adrQ=%p", ni->VM.noVM, ni->VM.busy, queue);	
-	//printf("\n noVM=%d busy=%d adr Queue=%p", ni->VM.noVM, ni->VM.busy,queue);
+	newVM->busy = 0;
+	newVM->ptrDebutVM = (unsigned short*)malloc(sizeof(unsigned short)*VM_SEGMENT_SIZE);
+
+	queue = appendToLinkedList(&head, newVM, sizeof(infoVM));
+	nbVM++;
 }
 
 //#######################################
 //# Retire un item de la liste chaînée
 //# ENTREE: noVM: numéro du noeud a retirer 
 void removeItem(const int noVM) {
-	noeudVM *ptr;
-	noeudVM *tptr;
-	noeudVM *optr;
-	//Vérification sommaire (noVM>0 et liste non vide)	
-	if ((noVM < 1) || ((!head) && (!queue)))
-		return;
+	int i;
+	linkedList** list = &head;
 
-	//Pointeur de recherche
-	if(noVM == 1) {
-		ptr = head; // suppression du premier element de la liste
-	} else {
-		ptr = findPrev(noVM);
+	for (i = 1; i < noVM && *list; i++){
+		list = &((*list)->next);
 	}
-	//L'item a été trouvé
-	if (ptr){
-		
-		nbVM--;
+	deleteLinkedListNode(list);
 
-		// Memorisation du pointeur de l'item en cours de suppression
-		// Ajustement des pointeurs
-		if((head == ptr) && (noVM == 1)) { // suppression de l'element de tete
-			if(head == queue) {// un seul element dans la liste
-				free(ptr->VM.ptrDebutVM);
-				free(ptr);
-				queue = head = NULL;
-				return;
-			}
-			tptr = ptr->suivant;
-			head = tptr;
-			free(ptr->VM.ptrDebutVM);
-			free(ptr);
-		} else if (queue == ptr->suivant) { // suppression de l'element de queue
-			queue=ptr;
-			free(ptr->suivant->VM.ptrDebutVM);
-			free(ptr->suivant);
-			ptr->suivant=NULL;
-			return;
-		} else { // suppression d'un element dans la liste
-			optr = ptr->suivant;	
-			ptr->suivant = ptr->suivant->suivant;
-			tptr = ptr->suivant;
-			free(optr->VM.ptrDebutVM);
-			free(optr);
+	if (*list){
+		while((*list)->next){
+			list = &((*list)->next);
 		}
-		
-		/*
-		while (tptr){ // ajustement des numeros de VM
-		//Est-ce le prédécesseur de l'item recherché?
-			tptr->VM.noVM--;
-			//On retourne un pointeur sur l'item précédent	
-
-		//Déplacement du pointeur de navigation
-			tptr=tptr->suivant;
-		}*/
+		queue = *list;
 	}
 }
 
@@ -154,11 +134,11 @@ void listItems(const int start, const int end){
 	printf("noVM  Busy?		Adresse Debut VM                        \n");
 	printf("========================================================\n");
 
-	noeudVM *ptr = head; //premier element
+	linkedList *ptr = head; //premier element
 	for (i = start; i <= end && ptr; i++) {
-		printf("%d \t %d \t %p\n", i, ptr->VM.busy, ptr->VM.ptrDebutVM);
+		printf("%d \t %d \t %p\n", i, ((infoVM*)ptr->data)->busy, ((infoVM*)ptr->data)->ptrDebutVM);
 		
-		ptr = ptr->suivant;
+		ptr = ptr->next;
 	}
 
 	//Affichage des pieds de colonnes

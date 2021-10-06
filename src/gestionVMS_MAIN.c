@@ -17,9 +17,9 @@
 // Variables globales
 
 //Pointeur de tête de liste
-noeudVM* head;
+linkedList* head;
 //Pointeur de queue de liste pour ajout rapide
-noeudVM* queue;
+linkedList* queue;
 // nombre de VM actives
 int nbVM;
 
