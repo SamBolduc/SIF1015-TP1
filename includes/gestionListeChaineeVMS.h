@@ -16,6 +16,11 @@ struct noeudVM{
 	struct noeudVM		*suivant;	
 	};	
 	
+struct remove_item_args{
+	int nstart;
+	int nend;
+};
+
 void cls(void);
 void error(const int exitcode, const char * message);
 
@@ -24,7 +29,7 @@ struct noeudVM * findPrev(const int no);
 
 void *addItem(void *arg);
 void *removeItem(void *arg);
-void listItems(const int start, const int end);
+void *listItems(void *arg);
 void saveItems(const char* sourcefname);
 int executeFile(int noVM, char* sourcefname);
 

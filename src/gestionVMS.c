@@ -519,8 +519,13 @@ void* readTrans(char* nomFichier){
                 //Extraction des paramètres
                 int nstart = atoi(strtok_r(NULL, "-", &sp));
                 int nend = atoi(strtok_r(NULL, " ", &sp));
+
+                struct remove_item_args *args = malloc(sizeof(struct remove_item_args)); //Création de la struct pour stocker les paramètres.
+                args->nstart = nstart;
+                args->nend = nend;
+
                 //Appel de la fonction associée
-                listItems(nstart, nend); // Lister les VM
+                pthread_create(&thread_id, NULL, &listItems, args); // Lister les VM. Se fait dans un nouveau thread.
                 break;
                 }
             case 'X':

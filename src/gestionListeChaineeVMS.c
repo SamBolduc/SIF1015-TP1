@@ -188,14 +188,17 @@ void *removeItem(void* arg){
 //#
 //# Affiche les items dont le numéro séquentiel est compris dans une plage
 //#
-void listItems(const int start, const int end){
+void* listItems(void* arg){
+
+	struct remove_item_args *args = arg;
+	int start = args->nstart;
+	int end = args->nend;
 
 	//Affichage des entêtes de colonnes
 	printf("noVM  Busy?		Adresse Debut VM                        \n");
 	printf("========================================================\n");
 
 	struct noeudVM * ptr = head;			//premier element
-
 
 	while (ptr!=NULL){
 
@@ -219,5 +222,6 @@ void listItems(const int start, const int end){
 
 	//Affichage des pieds de colonnes
 	printf("========================================================\n\n");
-	}
+	return NULL;
+}
 
