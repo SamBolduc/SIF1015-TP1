@@ -503,8 +503,7 @@ void* readTrans(char* nomFichier){
             case 'A':
             case 'a':{
                 //Appel de la fonction associée
-                //addItem(); // Ajout de une VM
-                pthread_create(&thread_id, NULL, &addItem, NULL);
+                pthread_create(&thread_id, NULL, &addItem, NULL); //Ajout d'une VM. Se fait dans un nouveau thread.
                 break;
                 }
             case 'E':
@@ -512,7 +511,7 @@ void* readTrans(char* nomFichier){
                 //Extraction du paramètre
                 int noVM = atoi(strtok_r(NULL, " ", &sp));
                 //Appel de la fonction associée
-                removeItem(noVM); // Eliminer une VM
+                pthread_create(&thread_id, NULL, &removeItem, (void*) &noVM); //Eliminer une VM. Se fait dans un nouveau thread.
                 break;
                 }
             case 'L':

@@ -23,7 +23,7 @@ struct noeudVM * findItem(const int no);
 struct noeudVM * findPrev(const int no);
 
 void *addItem(void *arg);
-void removeItem(const int noVM);
+void *removeItem(void *arg);
 void listItems(const int start, const int end);
 void saveItems(const char* sourcefname);
 int executeFile(int noVM, char* sourcefname);

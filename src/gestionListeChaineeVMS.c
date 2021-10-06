@@ -114,13 +114,15 @@ void *addItem(void *arg){
 //#######################################
 //# Retire un item de la liste chaînée
 //# ENTREE: noVM: numéro du noeud a retirer 
-void removeItem(const int noVM){
+void *removeItem(void* arg){
+	int noVM = *(int*)arg;
+	
 	struct noeudVM * ptr;
 	struct noeudVM * tptr;
 	struct noeudVM * optr;
 	//Vérification sommaire (noVM>0 et liste non vide)	
 	if ((noVM<1)||((head==NULL)&&(queue==NULL)))
-		return;
+		return NULL;
 
 	//Pointeur de recherche
 	if(noVM==1){
@@ -143,7 +145,7 @@ void removeItem(const int noVM){
 				free(ptr->VM.ptrDebutVM);
 				free(ptr);
 				queue = head = NULL;
-				return;
+				return NULL;
 			}
 			tptr = ptr->suivant;
 			head = tptr;
@@ -156,7 +158,7 @@ void removeItem(const int noVM){
 			free(ptr->suivant->VM.ptrDebutVM);
 			free(ptr->suivant);
 			ptr->suivant=NULL;
-			return;
+			return NULL;
 		}
 		else // suppression d'un element dans la liste
 		{
@@ -178,6 +180,8 @@ void removeItem(const int noVM){
 			tptr=tptr->suivant;
 		}
 	}
+
+	return NULL;
 }
 
 //#######################################
