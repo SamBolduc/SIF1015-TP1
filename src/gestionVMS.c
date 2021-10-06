@@ -502,12 +502,13 @@ void* readTrans(char* nomFichier){
 		tok = strtok_r(buffer, " ", &sp);
 
         pthread_t thread_id;
+        int ret;
         //Branchement selon le type de transaction
         switch(tok[0]){
             case 'A':
             case 'a':{
                 //Appel de la fonction associée
-                pthread_create(&thread_id, NULL, &addItem, NULL); //Ajout d'une VM. Se fait dans un nouveau thread.
+                ret = pthread_create(&thread_id, NULL, &addItem, NULL); //Ajout d'une VM. Se fait dans un nouveau thread.
                 break;
                 }
             case 'E':
@@ -515,7 +516,7 @@ void* readTrans(char* nomFichier){
                 //Extraction du paramètre
                 int noVM = atoi(strtok_r(NULL, " ", &sp));
                 //Appel de la fonction associée
-                pthread_create(&thread_id, NULL, &removeItem, (void*) &noVM); //Eliminer une VM. Se fait dans un nouveau thread.
+                ret = pthread_create(&thread_id, NULL, &removeItem, (void*) &noVM); //Eliminer une VM. Se fait dans un nouveau thread.
                 break;
                 }
             case 'L':
@@ -529,7 +530,7 @@ void* readTrans(char* nomFichier){
                 args->nend = nend;
 
                 //Appel de la fonction associée
-                pthread_create(&thread_id, NULL, &listItems, args); // Lister les VM. Se fait dans un nouveau thread.
+                ret = pthread_create(&thread_id, NULL, &listItems, args); // Lister les VM. Se fait dans un nouveau thread.
                 break;
                 }
             case 'X':
@@ -542,10 +543,14 @@ void* readTrans(char* nomFichier){
                 args->noVM = noVM;
                 args->fileName = nomfich;
 
-                pthread_create(&thread_id, NULL, &executeFile, args); //Executer le code binaire du fichier nomFich sur la VM noVM
-                
+                ret = pthread_create(&thread_id, NULL, &executeFile, args); //Executer le code binaire du fichier nomFich sur la VM noVM
                 break;
                 }
+        }
+
+        if(ret != 0){
+            printf("An error occurred while creating a new thread. Exiting...");
+            break;
         }
 
 		//Lecture (tentative) de la prochaine ligne de texte
