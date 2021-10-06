@@ -83,7 +83,7 @@ struct noeudVM * findPrev(const int no){
 //# Ajoute un item a la fin de la liste chaînée de VM
 //# ENTREE: 
 //#	RETOUR:  
-void addItem(){
+void *addItem(void *arg){
 	//Création de l'enregistrement en mémoire
 	struct noeudVM* ni = (struct noeudVM*)malloc(sizeof(struct noeudVM));
 //printf("\n noVM=%d busy=%d adr ni=%p", ni->VM.noVM, ni->VM.busy, ni);
@@ -100,7 +100,7 @@ void addItem(){
 	if ((head == NULL) && (queue == NULL)){//liste vide
 	  ni->suivant= NULL;
 	  queue = head = ni;
-	  return;
+	  return NULL;
 	}
 	struct noeudVM* tptr = queue;
 	ni->suivant= NULL;
@@ -108,8 +108,7 @@ void addItem(){
 //printf("\n noVM=%d busy=%d adrQ=%p", ni->VM.noVM, ni->VM.busy, queue);	
 	tptr->suivant = ni;
 //printf("\n noVM=%d busy=%d adr Queue=%p", ni->VM.noVM, ni->VM.busy,queue);
-
-
+	return NULL;
 }
 
 //#######################################

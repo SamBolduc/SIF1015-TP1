@@ -22,7 +22,7 @@ void error(const int exitcode, const char * message);
 struct noeudVM * findItem(const int no);
 struct noeudVM * findPrev(const int no);
 
-void addItem();
+void *addItem(void *arg);
 void removeItem(const int noVM);
 void listItems(const int start, const int end);
 void saveItems(const char* sourcefname);

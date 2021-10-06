@@ -13,6 +13,7 @@
 
 #include "gestionListeChaineeVMS.h"
 #include "gestionVMS.h"
+#include <pthread.h>
 
 //Pointeur de tête de liste
 extern struct noeud* head;
@@ -496,40 +497,43 @@ void* readTrans(char* nomFichier){
 		//Extraction du type de transaction
 		tok = strtok_r(buffer, " ", &sp);
 
-		//Branchement selon le type de transaction
-		switch(tok[0]){
-			case 'A':
-			case 'a':{
-				//Appel de la fonction associée
-				addItem(); // Ajout de une VM
-				break;
-				}
-			case 'E':
-			case 'e':{
-				//Extraction du paramètre
-				int noVM = atoi(strtok_r(NULL, " ", &sp));
-				//Appel de la fonction associée
-				removeItem(noVM); // Eliminer une VM
-				break;
-				}
-			case 'L':
-			case 'l':{
-				//Extraction des paramètres
-				int nstart = atoi(strtok_r(NULL, "-", &sp));
-				int nend = atoi(strtok_r(NULL, " ", &sp));
-				//Appel de la fonction associée
-				listItems(nstart, nend); // Lister les VM
-				break;
-				}
-			case 'X':
-			case 'x':{
-				//Appel de la fonction associée
-				int noVM = atoi(strtok_r(NULL, " ", &sp));
-				char *nomfich = strtok_r(NULL, "\n", &sp);
-				executeFile(noVM, nomfich); // Executer le code binaire du fichier nomFich sur la VM noVM
-				break;
-				}
-		}
+        pthread_t thread_id;
+        //Branchement selon le type de transaction
+        switch(tok[0]){
+            case 'A':
+            case 'a':{
+                //Appel de la fonction associée
+                //addItem(); // Ajout de une VM
+                pthread_create(&thread_id, NULL, &addItem, NULL);
+                break;
+                }
+            case 'E':
+            case 'e':{
+                //Extraction du paramètre
+                int noVM = atoi(strtok_r(NULL, " ", &sp));
+                //Appel de la fonction associée
+                removeItem(noVM); // Eliminer une VM
+                break;
+                }
+            case 'L':
+            case 'l':{
+                //Extraction des paramètres
+                int nstart = atoi(strtok_r(NULL, "-", &sp));
+                int nend = atoi(strtok_r(NULL, " ", &sp));
+                //Appel de la fonction associée
+                listItems(nstart, nend); // Lister les VM
+                break;
+                }
+            case 'X':
+            case 'x':{
+                //Appel de la fonction associée
+                int noVM = atoi(strtok_r(NULL, " ", &sp));
+                char *nomfich = strtok_r(NULL, "\n", &sp);
+                executeFile(noVM, nomfich); // Executer le code binaire du fichier nomFich sur la VM noVM
+                break;
+                }
+        }
+
 		//Lecture (tentative) de la prochaine ligne de texte
 		fgets(buffer, 100, f);
 	}
