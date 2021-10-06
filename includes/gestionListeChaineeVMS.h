@@ -10,15 +10,14 @@
 typedef struct noeudVM noeudVM;
 typedef struct infoVM infoVM;
 
-struct infoVM {						
-	int			   noVM;
+struct infoVM {
 	unsigned char  busy; 
 	unsigned short *ptrDebutVM;							
 };
 
 struct noeudVM {			
-	infoVM	VM;		
-	noeudVM	*suivant;	
+	infoVM	VM;
+	noeudVM	*suivant;
 };
 	
 void cls(void);

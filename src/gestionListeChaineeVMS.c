@@ -26,26 +26,19 @@ extern int nbVM;       // nombre de VM actives
 //#			est introuvable
 //#
 noeudVM* findItem(const int no){
+	int i;
 	//La liste est vide 
 	if ((!head)&&(!queue)) return NULL;
 
 	//Pointeur de navigation
 	noeudVM *ptr = head;
-
-	if(ptr->VM.noVM == no) // premier noeudVM
-		return ptr;
 	//Tant qu'un item suivant existe
-	while (ptr->suivant){
+	for (i = 1; i < no && ptr; i++) {
 		//Déplacement du pointeur de navigation
-		ptr=ptr->suivant;
-
-		//Est-ce l'item recherché?
-		if (ptr->VM.noVM == no){
-			return ptr;
-		}
+		ptr = ptr->suivant;
 	}
 	//On retourne un pointeur NULL
-	return NULL;
+	return ptr;
 }
 
 //#######################################
@@ -56,23 +49,7 @@ noeudVM* findItem(const int no){
 //# 		Retourne NULL dans le cas où l'item est introuvable
 //#
 noeudVM* findPrev(const int no){
-	//La liste est vide 
-	if ((!head)&&(!queue)) return NULL;
-	//Pointeur de navigation
-	noeudVM *ptr = head;
-	//Tant qu'un item suivant existe
-	while (ptr->suivant){
-
-		//Est-ce le prédécesseur de l'item recherché?
-		if (ptr->suivant->VM.noVM == no){
-			//On retourne un pointeur sur l'item précédent
-			return ptr;
-		}
-		//Déplacement du pointeur de navigation
-		ptr=ptr->suivant;
-	}
-	//On retourne un pointeur NULL
-	return NULL;
+	return findItem(no - 1);
 }
 
 //#####################################################
@@ -87,7 +64,7 @@ void addItem() {
 	//printf("\n noVM=%d busy=%d adrQ deb=%p", ni->VM.noVM, ni->VM.busy,queue);
 
 	//Affectation des valeurs des champs
-	ni->VM.noVM	= ++nbVM;
+	/* ni->VM.noVM	= */ ++nbVM;
 	//printf("\n noVM=%d", ni->VM.noVM);
 	ni->VM.busy	= 0;
 	//printf("\n busy=%d", ni->VM.busy);
@@ -154,6 +131,7 @@ void removeItem(const int noVM) {
 			free(optr);
 		}
 		
+		/*
 		while (tptr){ // ajustement des numeros de VM
 		//Est-ce le prédécesseur de l'item recherché?
 			tptr->VM.noVM--;
@@ -161,7 +139,7 @@ void removeItem(const int noVM) {
 
 		//Déplacement du pointeur de navigation
 			tptr=tptr->suivant;
-		}
+		}*/
 	}
 }
 
@@ -171,31 +149,16 @@ void removeItem(const int noVM) {
 //#
 void listItems(const int start, const int end){
 
+	int i;
 	//Affichage des entêtes de colonnes
 	printf("noVM  Busy?		Adresse Debut VM                        \n");
 	printf("========================================================\n");
 
 	noeudVM *ptr = head; //premier element
-
-
-	while (ptr){
-
-		//L'item a un numéro séquentiel dans l'interval défini
-		if ((ptr->VM.noVM >= start) && (ptr->VM.noVM <= end)){
-			printf("%d \t %d \t %p\n",
-				ptr->VM.noVM,
-				ptr->VM.busy, ptr->VM.ptrDebutVM
-			);
-		}
-		if (ptr->VM.noVM > end){
-			//L'ensemble des items potentiels sont maintenant passés
-			//Déplacement immédiatement à la FIN de la liste
-			//Notez que le pointeur optr est toujours valide
-			ptr=NULL;
-		} else {
-			ptr = ptr->suivant;
-		}
-
+	for (i = start; i <= end && ptr; i++) {
+		printf("%d \t %d \t %p\n", i, ptr->VM.busy, ptr->VM.ptrDebutVM);
+		
+		ptr = ptr->suivant;
 	}
 
 	//Affichage des pieds de colonnes
