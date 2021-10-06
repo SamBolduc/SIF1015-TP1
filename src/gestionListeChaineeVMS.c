@@ -113,7 +113,7 @@ void *addItem(void *arg){
 
 //#######################################
 //# Retire un item de la liste chaînée
-//# ENTREE: noVM: numéro du noeud a retirer 
+//# ENTREE: arg: Pointer vers le numéro du noeud a retirer 
 void *removeItem(void* arg){
 	int noVM = *(int*)arg;
 	

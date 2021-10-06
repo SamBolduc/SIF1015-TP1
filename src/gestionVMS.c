@@ -503,6 +503,7 @@ void* readTrans(char* nomFichier){
 
         pthread_t thread_id;
         int ret;
+
         //Branchement selon le type de transaction
         switch(tok[0]){
             case 'A':
@@ -510,15 +511,16 @@ void* readTrans(char* nomFichier){
                 //Appel de la fonction associée
                 ret = pthread_create(&thread_id, NULL, &addItem, NULL); //Ajout d'une VM. Se fait dans un nouveau thread.
                 break;
-                }
+            }
             case 'E':
             case 'e':{
                 //Extraction du paramètre
                 int noVM = atoi(strtok_r(NULL, " ", &sp));
+
                 //Appel de la fonction associée
                 ret = pthread_create(&thread_id, NULL, &removeItem, (void*) &noVM); //Eliminer une VM. Se fait dans un nouveau thread.
                 break;
-                }
+            }
             case 'L':
             case 'l':{
                 //Extraction des paramètres
@@ -532,10 +534,10 @@ void* readTrans(char* nomFichier){
                 //Appel de la fonction associée
                 ret = pthread_create(&thread_id, NULL, &listItems, args); // Lister les VM. Se fait dans un nouveau thread.
                 break;
-                }
+            }
             case 'X':
             case 'x':{
-                //Appel de la fonction associée
+                //Extraction des paramètres
                 int noVM = atoi(strtok_r(NULL, " ", &sp));
                 char *nomfich = strtok_r(NULL, "\n", &sp);
 
@@ -543,11 +545,13 @@ void* readTrans(char* nomFichier){
                 args->noVM = noVM;
                 args->fileName = nomfich;
 
+                //Appel de la fonction associée
                 ret = pthread_create(&thread_id, NULL, &executeFile, args); //Executer le code binaire du fichier nomFich sur la VM noVM
                 break;
-                }
+            }
         }
 
+        //Si le code de retour n'est pas '0', alors il y a une erreur et on arrête la lecture du fichier.
         if(ret != 0){
             printf("An error occurred while creating a new thread. Exiting...");
             break;
