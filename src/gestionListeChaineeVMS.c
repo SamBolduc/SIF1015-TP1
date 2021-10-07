@@ -83,7 +83,7 @@ struct noeudVM * findPrev(const int no){
 //# Ajoute un item a la fin de la liste chaînée de VM
 //# ENTREE: 
 //#	RETOUR:  
-void *addItem(void *arg){
+void addItem(){
 	//Création de l'enregistrement en mémoire
 	struct noeudVM* ni = (struct noeudVM*)malloc(sizeof(struct noeudVM));
 //printf("\n noVM=%d busy=%d adr ni=%p", ni->VM.noVM, ni->VM.busy, ni);
@@ -100,7 +100,7 @@ void *addItem(void *arg){
 	if ((head == NULL) && (queue == NULL)){//liste vide
 	  ni->suivant= NULL;
 	  queue = head = ni;
-	  return NULL;
+	  return;
 	}
 	struct noeudVM* tptr = queue;
 	ni->suivant= NULL;
@@ -108,21 +108,20 @@ void *addItem(void *arg){
 //printf("\n noVM=%d busy=%d adrQ=%p", ni->VM.noVM, ni->VM.busy, queue);	
 	tptr->suivant = ni;
 //printf("\n noVM=%d busy=%d adr Queue=%p", ni->VM.noVM, ni->VM.busy,queue);
-	return NULL;
 }
 
 //#######################################
 //# Retire un item de la liste chaînée
 //# ENTREE: arg: Pointer vers le numéro du noeud a retirer 
-void *removeItem(void* arg){
-	int noVM = *(int*)arg;
-	
+void removeItem(int* p_nbVM){	
+	int noVM = *p_nbVM;
+
 	struct noeudVM * ptr;
 	struct noeudVM * tptr;
 	struct noeudVM * optr;
 	//Vérification sommaire (noVM>0 et liste non vide)	
 	if ((noVM<1)||((head==NULL)&&(queue==NULL)))
-		return NULL;
+		return;
 
 	//Pointeur de recherche
 	if(noVM==1){
@@ -145,7 +144,7 @@ void *removeItem(void* arg){
 				free(ptr->VM.ptrDebutVM);
 				free(ptr);
 				queue = head = NULL;
-				return NULL;
+				return;
 			}
 			tptr = ptr->suivant;
 			head = tptr;
@@ -158,7 +157,7 @@ void *removeItem(void* arg){
 			free(ptr->suivant->VM.ptrDebutVM);
 			free(ptr->suivant);
 			ptr->suivant=NULL;
-			return NULL;
+			return;
 		}
 		else // suppression d'un element dans la liste
 		{
@@ -180,19 +179,15 @@ void *removeItem(void* arg){
 			tptr=tptr->suivant;
 		}
 	}
-
-	return NULL;
 }
 
 //#######################################
 //#
 //# Affiche les items dont le numéro séquentiel est compris dans une plage
 //#
-void* listItems(void* arg){
-
-	struct remove_item_args *args = arg;
-	int start = args->nstart;
-	int end = args->nend;
+void listItems(remove_item_args* arg){
+	int start = arg->nstart;
+	int end = arg->nend;
 
 	//Affichage des entêtes de colonnes
 	printf("noVM  Busy?		Adresse Debut VM                        \n");
@@ -222,6 +217,5 @@ void* listItems(void* arg){
 
 	//Affichage des pieds de colonnes
 	printf("========================================================\n\n");
-	return NULL;
 }
 

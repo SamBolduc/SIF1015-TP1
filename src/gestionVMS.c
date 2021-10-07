@@ -164,11 +164,9 @@ void handle_interrupt(int signal)
 //#
 //# Execute le fichier de code .obj 
 //#
-void* executeFile(void* arg){
-
-    struct execute_file_args *args = arg;
-    int noVM = args->noVM;
-    char* sourcefname = args->fileName;
+int executeFile(execute_file_args* arg){
+    int noVM = arg->noVM;
+    char* sourcefname = arg->fileName;
 
 /* Memory Storage */
 /* 65536 locations */
@@ -184,13 +182,13 @@ void* executeFile(void* arg){
     if(ptr == NULL)
     {
         printf("Virtual Machine unavailable\n");
-        return (void*)0;
+        return 0;
     }	
 	memory = ptr->VM.ptrDebutVM;
     if (!read_image_file(memory, sourcefname, &origin))
     {
         printf("Failed to load image: %s\n", sourcefname);
-        return (void*)0;
+        return 0;
     }
 	
     while(ptr->VM.busy != 0){ // wait for the VM 
@@ -473,7 +471,7 @@ void* executeFile(void* arg){
     ptr->VM.busy = 0;
     /* Shutdown */
     restore_input_buffering();
-    return (void*)1;
+    return 1;
 }
 
 //#######################################
@@ -508,7 +506,7 @@ void* readTrans(char* nomFichier){
             case 'A':
             case 'a':{
                 //Appel de la fonction associée
-                ret = pthread_create(&thread, NULL, &addItem, NULL); //Ajout d'une VM. Se fait dans un nouveau thread.
+                ret = pthread_create(&thread, NULL, (void*) &addItem, NULL); //Ajout d'une VM. Se fait dans un nouveau thread.
                 break;
             }
             case 'E':
@@ -517,7 +515,7 @@ void* readTrans(char* nomFichier){
                 int noVM = atoi(strtok_r(NULL, " ", &sp));
 
                 //Appel de la fonction associée
-                ret = pthread_create(&thread, NULL, &removeItem, (void*) &noVM); //Eliminer une VM. Se fait dans un nouveau thread.
+                ret = pthread_create(&thread, NULL, (void*) &removeItem, (void*) &noVM); //Eliminer une VM. Se fait dans un nouveau thread.
                 break;
             }
             case 'L':
@@ -526,12 +524,12 @@ void* readTrans(char* nomFichier){
                 int nstart = atoi(strtok_r(NULL, "-", &sp));
                 int nend = atoi(strtok_r(NULL, " ", &sp));
 
-                struct remove_item_args *args = malloc(sizeof(struct remove_item_args)); //Création de la struct pour stocker les paramètres.
+                remove_item_args *args = malloc(sizeof(remove_item_args)); //Création de la struct pour stocker les paramètres.
                 args->nstart = nstart;
                 args->nend = nend;
 
                 //Appel de la fonction associée
-                ret = pthread_create(&thread, NULL, &listItems, args); // Lister les VM. Se fait dans un nouveau thread.
+                ret = pthread_create(&thread, NULL, (void*) &listItems, (void*) args); // Lister les VM. Se fait dans un nouveau thread.
                 break;
             }
             case 'X':
@@ -540,12 +538,12 @@ void* readTrans(char* nomFichier){
                 int noVM = atoi(strtok_r(NULL, " ", &sp));
                 char *nomfich = strtok_r(NULL, "\n", &sp);
 
-                struct execute_file_args *args = malloc(sizeof(struct execute_file_args));
+                execute_file_args *args = malloc(sizeof(execute_file_args));
                 args->noVM = noVM;
                 args->fileName = nomfich;
 
                 //Appel de la fonction associée
-                ret = pthread_create(&thread, NULL, &executeFile, args); //Executer le code binaire du fichier nomFich sur la VM noVM
+                ret = pthread_create(&thread, NULL, (void*) &executeFile, (void*) args); //Executer le code binaire du fichier nomFich sur la VM noVM
                 break;
             }
         }
@@ -557,7 +555,7 @@ void* readTrans(char* nomFichier){
         }
 
         if(tok[0] != 'X' && tok[0] != 'x'){
-            pthread_join(&thread, NULL);
+            pthread_join(thread, NULL);
         }
 
 		//Lecture (tentative) de la prochaine ligne de texte
