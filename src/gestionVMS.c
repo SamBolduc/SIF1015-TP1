@@ -13,7 +13,6 @@
 
 #include "gestionListeChaineeVMS.h"
 #include "gestionVMS.h"
-#include <pthread.h>
 
 //Pointeur de tête de liste
 extern struct noeud* head;
