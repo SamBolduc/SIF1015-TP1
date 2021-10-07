@@ -476,7 +476,6 @@ void* executeFile(void* arg){
     return (void*)1;
 }
 
-
 //#######################################
 //#
 //# fonction utilisée pour le traitement  des transactions
@@ -501,7 +500,7 @@ void* readTrans(char* nomFichier){
 		//Extraction du type de transaction
 		tok = strtok_r(buffer, " ", &sp);
 
-        pthread_t thread_id;
+        pthread_t thread;
         int ret;
 
         //Branchement selon le type de transaction
@@ -509,7 +508,7 @@ void* readTrans(char* nomFichier){
             case 'A':
             case 'a':{
                 //Appel de la fonction associée
-                ret = pthread_create(&thread_id, NULL, &addItem, NULL); //Ajout d'une VM. Se fait dans un nouveau thread.
+                ret = pthread_create(&thread, NULL, &addItem, NULL); //Ajout d'une VM. Se fait dans un nouveau thread.
                 break;
             }
             case 'E':
@@ -518,7 +517,7 @@ void* readTrans(char* nomFichier){
                 int noVM = atoi(strtok_r(NULL, " ", &sp));
 
                 //Appel de la fonction associée
-                ret = pthread_create(&thread_id, NULL, &removeItem, (void*) &noVM); //Eliminer une VM. Se fait dans un nouveau thread.
+                ret = pthread_create(&thread, NULL, &removeItem, (void*) &noVM); //Eliminer une VM. Se fait dans un nouveau thread.
                 break;
             }
             case 'L':
@@ -532,7 +531,7 @@ void* readTrans(char* nomFichier){
                 args->nend = nend;
 
                 //Appel de la fonction associée
-                ret = pthread_create(&thread_id, NULL, &listItems, args); // Lister les VM. Se fait dans un nouveau thread.
+                ret = pthread_create(&thread, NULL, &listItems, args); // Lister les VM. Se fait dans un nouveau thread.
                 break;
             }
             case 'X':
@@ -546,7 +545,7 @@ void* readTrans(char* nomFichier){
                 args->fileName = nomfich;
 
                 //Appel de la fonction associée
-                ret = pthread_create(&thread_id, NULL, &executeFile, args); //Executer le code binaire du fichier nomFich sur la VM noVM
+                ret = pthread_create(&thread, NULL, &executeFile, args); //Executer le code binaire du fichier nomFich sur la VM noVM
                 break;
             }
         }
@@ -555,6 +554,10 @@ void* readTrans(char* nomFichier){
         if(ret != 0){
             printf("An error occurred while creating a new thread. Exiting...");
             break;
+        }
+
+        if(tok[0] != 'X' && tok[0] != 'x'){
+            pthread_join(&thread, NULL);
         }
 
 		//Lecture (tentative) de la prochaine ligne de texte
