@@ -40,6 +40,5 @@ noeudVM *findPrev(const int no);
 void  addItem();
 void  removeItem(int* p_nbVM);
 void  listItems(remove_item_args* arg);
-int   executeFile(execute_file_args* arg);
 void* readTrans(char* nomFichier);
 void  saveItems(const char* sourcefname);
