@@ -14,15 +14,18 @@
 #include "gestionListeChaineeVMS.h"
 #include "gestionVMS.h"
 
+#include <pthread.h>
+
 // Variables globales
 
-//Pointeur de tête de liste
-linkedList* head;
-//Pointeur de queue de liste pour ajout rapide
-linkedList* queue;
-// nombre de VM actives
-int nbVM;
+linkedList* threads = NULL;
 
+linkedList* head;  //Pointeur de tête de liste
+linkedList* queue; //Pointeur de queue de liste pour ajout rapide
+int nbVM;          // nombre de VM actives
+
+pthread_mutex_t headState;
+pthread_mutex_t threadsState;
 
 int main(int argc, char* argv[]){
 
