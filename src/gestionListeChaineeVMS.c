@@ -107,8 +107,10 @@ void addItem() {
 
 //#######################################
 //# Retire un item de la liste chaînée
-//# ENTREE: noVM: numéro du noeud a retirer 
-void removeItem(const int noVM) {
+//# ENTREE: arg: Pointer vers le numéro du noeud a retirer 
+void removeItem(int* p_nbVM){	
+	int noVM = *p_nbVM;
+	
 	noeudVM *ptr;
 	noeudVM *tptr;
 	noeudVM *optr;
@@ -169,14 +171,15 @@ void removeItem(const int noVM) {
 //#
 //# Affiche les items dont le numéro séquentiel est compris dans une plage
 //#
-void listItems(const int start, const int end){
+void listItems(remove_item_args* arg){
+	int start = arg->nstart;
+	int end = arg->nend;
 
 	//Affichage des entêtes de colonnes
 	printf("noVM  Busy?		Adresse Debut VM                        \n");
 	printf("========================================================\n");
 
 	noeudVM *ptr = head; //premier element
-
 
 	while (ptr){
 

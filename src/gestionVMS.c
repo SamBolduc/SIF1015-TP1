@@ -135,7 +135,9 @@ void handle_interrupt(int signal) {
 //#
 //# Execute le fichier de code .obj 
 //#
-int executeFile(int noVM, char* sourcefname){
+int executeFile(execute_file_args* arg){
+    int noVM = arg->noVM;
+    char* sourcefname = arg->fileName;
 
 /* Memory Storage */
 /* 65536 locations */
@@ -149,12 +151,12 @@ int executeFile(int noVM, char* sourcefname){
 	
     if(!ptr) {
         printf("Virtual Machine unavailable\n");
-        return(0);
+        return 0;
     }	
 	memory = ptr->VM.ptrDebutVM;
     if (!read_image_file(memory, sourcefname, &origin)) {
         printf("Failed to load image: %s\n", sourcefname);
-        return(0);
+        return 0;
     }
 	
     while(ptr->VM.busy); // wait for the VM 
@@ -421,9 +423,8 @@ int executeFile(int noVM, char* sourcefname){
     ptr->VM.busy = 0;
     /* Shutdown */
     restore_input_buffering();
-    return(1);
+    return 1;
 }
-
 
 //#######################################
 //#
@@ -448,42 +449,66 @@ void* readTrans(char* nomFichier) {
 		//Extraction du type de transaction
 		tok = strtok_r(buffer, " ", &sp);
 
-		//Branchement selon le type de transaction
-		switch(tok[0]) {
-			case 'A':
-			case 'a':
-				//Appel de la fonction associée
-				addItem(); // Ajout de une VM
-				break;
-			case 'E':
-			case 'e':
-                {
-                    //Extraction du paramètre
-                    int noVM = atoi(strtok_r(NULL, " ", &sp));
-                    //Appel de la fonction associée
-                    removeItem(noVM); // Eliminer une VM
-                    break;
-				}
-			case 'L':
-			case 'l':
-                {
-				    //Extraction des paramètres
-                    int nstart = atoi(strtok_r(NULL, "-", &sp));
-                    int nend = atoi(strtok_r(NULL, " ", &sp));
-                    //Appel de la fonction associée
-                    listItems(nstart, nend); // Lister les VM
-                    break;
-				}
-			case 'X':
-			case 'x':
-                {
-                    //Appel de la fonction associée
-                    int noVM = atoi(strtok_r(NULL, " ", &sp));
-                    char *nomfich = strtok_r(NULL, "\n", &sp);
-                    executeFile(noVM, nomfich); // Executer le code binaire du fichier nomFich sur la VM noVM
-                    break;
-				}
-		}
+        pthread_t thread;
+        int ret;
+
+        //Branchement selon le type de transaction
+        switch(tok[0]){
+            case 'A':
+            case 'a':{
+                //Appel de la fonction associée
+                ret = pthread_create(&thread, NULL, (void*) &addItem, NULL); //Ajout d'une VM. Se fait dans un nouveau thread.
+                break;
+            }
+            case 'E':
+            case 'e':{
+                //Extraction du paramètre
+                int noVM = atoi(strtok_r(NULL, " ", &sp));
+
+                //Appel de la fonction associée
+                ret = pthread_create(&thread, NULL, (void*) &removeItem, (void*) &noVM); //Eliminer une VM. Se fait dans un nouveau thread.
+                break;
+            }
+            case 'L':
+            case 'l':{
+                //Extraction des paramètres
+                int nstart = atoi(strtok_r(NULL, "-", &sp));
+                int nend = atoi(strtok_r(NULL, " ", &sp));
+
+                remove_item_args *args = malloc(sizeof(remove_item_args)); //Création de la struct pour stocker les paramètres.
+                args->nstart = nstart;
+                args->nend = nend;
+
+                //Appel de la fonction associée
+                ret = pthread_create(&thread, NULL, (void*) &listItems, (void*) args); // Lister les VM. Se fait dans un nouveau thread.
+                break;
+            }
+            case 'X':
+            case 'x':{
+                //Extraction des paramètres
+                int noVM = atoi(strtok_r(NULL, " ", &sp));
+                char *nomfich = strtok_r(NULL, "\n", &sp);
+
+                execute_file_args *args = malloc(sizeof(execute_file_args));
+                args->noVM = noVM;
+                args->fileName = nomfich;
+
+                //Appel de la fonction associée
+                ret = pthread_create(&thread, NULL, (void*) &executeFile, (void*) args); //Executer le code binaire du fichier nomFich sur la VM noVM
+                break;
+            }
+        }
+
+        //Si le code de retour n'est pas '0', alors il y a une erreur et on arrête la lecture du fichier.
+        if(ret != 0){
+            printf("An error occurred while creating a new thread. Exiting...");
+            break;
+        }
+
+        if(tok[0] != 'X' && tok[0] != 'x'){
+            pthread_join(thread, NULL);
+        }
+
 		//Lecture (tentative) de la prochaine ligne de texte
 		fgets(buffer, 100, f);
 	}

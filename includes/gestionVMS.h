@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <signal.h>
+#include <pthread.h>
+
 /* unix */
 #include <unistd.h>
 #include <fcntl.h>
