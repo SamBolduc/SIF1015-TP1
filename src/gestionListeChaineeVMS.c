@@ -14,12 +14,9 @@
 #include "gestionListeChaineeVMS.h"
 #include "gestionVMS.h"
 
-//Pointeur de tête de liste
-extern struct noeudVM* head;
-//Pointeur de queue de liste pour ajout rapide
-extern struct noeudVM* queue;
-// nombre de VM actives
-extern int nbVM;
+extern noeudVM* head;  //Pointeur de tête de liste
+extern noeudVM* queue; //Pointeur de queue de liste pour ajout rapide
+extern int nbVM;       // nombre de VM actives
 
 //#######################################
 //# Recherche un item dans la liste chaînée
@@ -28,29 +25,28 @@ extern int nbVM;
 //# 		Retourne NULL dans le cas où l'item
 //#			est introuvable
 //#
-struct noeudVM * findItem(const int no){
+noeudVM* findItem(const int no){
 	//La liste est vide 
-	if ((head==NULL)&&(queue==NULL)) return NULL;
+	if ((!head)&&(!queue)) return NULL;
 
 	//Pointeur de navigation
-	struct noeudVM * ptr = head;
+	noeudVM *ptr = head;
 
-	if(ptr->VM.noVM==no) // premier noeudVM
+	if(ptr->VM.noVM == no) // premier noeudVM
 		return ptr;
 	//Tant qu'un item suivant existe
-	while (ptr->suivant!=NULL){
-
+	while (ptr->suivant){
 		//Déplacement du pointeur de navigation
 		ptr=ptr->suivant;
 
 		//Est-ce l'item recherché?
-		if (ptr->VM.noVM==no){
+		if (ptr->VM.noVM == no){
 			return ptr;
-			}
 		}
+	}
 	//On retourne un pointeur NULL
 	return NULL;
-	}
+}
 
 //#######################################
 //#
@@ -59,55 +55,54 @@ struct noeudVM * findItem(const int no){
 //# RETOUR:	Le pointeur vers le prédécesseur est retourné		
 //# 		Retourne NULL dans le cas où l'item est introuvable
 //#
-struct noeudVM * findPrev(const int no){
+noeudVM* findPrev(const int no){
 	//La liste est vide 
-	if ((head==NULL)&&(queue==NULL)) return NULL;
+	if ((!head)&&(!queue)) return NULL;
 	//Pointeur de navigation
-	struct noeudVM * ptr = head;
+	noeudVM *ptr = head;
 	//Tant qu'un item suivant existe
-	while (ptr->suivant!=NULL){
+	while (ptr->suivant){
 
 		//Est-ce le prédécesseur de l'item recherché?
-		if (ptr->suivant->VM.noVM==no){
+		if (ptr->suivant->VM.noVM == no){
 			//On retourne un pointeur sur l'item précédent
 			return ptr;
 		}
 		//Déplacement du pointeur de navigation
 		ptr=ptr->suivant;
-		}
+	}
 	//On retourne un pointeur NULL
 	return NULL;
-	}
+}
 
 //#####################################################
 //# Ajoute un item a la fin de la liste chaînée de VM
 //# ENTREE: 
 //#	RETOUR:  
-void addItem(){
+void addItem() {
 	//Création de l'enregistrement en mémoire
-	struct noeudVM* ni = (struct noeudVM*)malloc(sizeof(struct noeudVM));
-//printf("\n noVM=%d busy=%d adr ni=%p", ni->VM.noVM, ni->VM.busy, ni);
-//printf("\n noVM=%d busy=%d adrQ deb=%p", ni->VM.noVM, ni->VM.busy,queue);
+	noeudVM* ni = (noeudVM*)malloc(sizeof(noeudVM));
+	
+	//printf("\n noVM=%d busy=%d adr ni=%p", ni->VM.noVM, ni->VM.busy, ni);
+	//printf("\n noVM=%d busy=%d adrQ deb=%p", ni->VM.noVM, ni->VM.busy,queue);
 
 	//Affectation des valeurs des champs
 	ni->VM.noVM	= ++nbVM;
 	//printf("\n noVM=%d", ni->VM.noVM);
 	ni->VM.busy	= 0;
 	//printf("\n busy=%d", ni->VM.busy);
-	ni->VM.ptrDebutVM	= (unsigned short*)malloc(sizeof(unsigned short)*65536);
-//printf("\n noVM=%d busy=%d adrptr VM=%p", ni->VM.noVM, ni->VM.busy, ni->VM.ptrDebutVM);
-//printf("\n noVM=%d busy=%d adrQ=%p", ni->VM.noVM, ni->VM.busy, queue);	
-	if ((head == NULL) && (queue == NULL)){//liste vide
-	  ni->suivant= NULL;
+	ni->VM.ptrDebutVM = (unsigned short*)malloc(sizeof(unsigned short)*VM_SEGMENT_SIZE);
+	//printf("\n noVM=%d busy=%d adrptr VM=%p", ni->VM.noVM, ni->VM.busy, ni->VM.ptrDebutVM);
+	//printf("\n noVM=%d busy=%d adrQ=%p", ni->VM.noVM, ni->VM.busy, queue);
+	ni->suivant = NULL;
+	if ((!head) && (!queue)){ //liste vide
 	  queue = head = ni;
 	  return;
 	}
-	struct noeudVM* tptr = queue;
-	ni->suivant= NULL;
+	((noeudVM*)queue)->suivant = ni;
 	queue = ni;
-//printf("\n noVM=%d busy=%d adrQ=%p", ni->VM.noVM, ni->VM.busy, queue);	
-	tptr->suivant = ni;
-//printf("\n noVM=%d busy=%d adr Queue=%p", ni->VM.noVM, ni->VM.busy,queue);
+	//printf("\n noVM=%d busy=%d adrQ=%p", ni->VM.noVM, ni->VM.busy, queue);	
+	//printf("\n noVM=%d busy=%d adr Queue=%p", ni->VM.noVM, ni->VM.busy,queue);
 }
 
 //#######################################
@@ -115,32 +110,29 @@ void addItem(){
 //# ENTREE: arg: Pointer vers le numéro du noeud a retirer 
 void removeItem(int* p_nbVM){	
 	int noVM = *p_nbVM;
-
-	struct noeudVM * ptr;
-	struct noeudVM * tptr;
-	struct noeudVM * optr;
+	
+	noeudVM *ptr;
+	noeudVM *tptr;
+	noeudVM *optr;
 	//Vérification sommaire (noVM>0 et liste non vide)	
-	if ((noVM<1)||((head==NULL)&&(queue==NULL)))
+	if ((noVM < 1) || ((!head) && (!queue)))
 		return;
 
 	//Pointeur de recherche
-	if(noVM==1){
+	if(noVM == 1) {
 		ptr = head; // suppression du premier element de la liste
-	}
-	else{
+	} else {
 		ptr = findPrev(noVM);
 	}
 	//L'item a été trouvé
-	if (ptr!=NULL){
+	if (ptr){
 		
 		nbVM--;
 
 		// Memorisation du pointeur de l'item en cours de suppression
 		// Ajustement des pointeurs
-		if((head == ptr) && (noVM==1)) // suppression de l'element de tete
-		{
-			if(head==queue) // un seul element dans la liste
-			{
+		if((head == ptr) && (noVM == 1)) { // suppression de l'element de tete
+			if(head == queue) {// un seul element dans la liste
 				free(ptr->VM.ptrDebutVM);
 				free(ptr);
 				queue = head = NULL;
@@ -150,17 +142,13 @@ void removeItem(int* p_nbVM){
 			head = tptr;
 			free(ptr->VM.ptrDebutVM);
 			free(ptr);
-		}
-		else if (queue==ptr->suivant) // suppression de l'element de queue
-		{
+		} else if (queue == ptr->suivant) { // suppression de l'element de queue
 			queue=ptr;
 			free(ptr->suivant->VM.ptrDebutVM);
 			free(ptr->suivant);
 			ptr->suivant=NULL;
 			return;
-		}
-		else // suppression d'un element dans la liste
-		{
+		} else { // suppression d'un element dans la liste
 			optr = ptr->suivant;	
 			ptr->suivant = ptr->suivant->suivant;
 			tptr = ptr->suivant;
@@ -168,9 +156,7 @@ void removeItem(int* p_nbVM){
 			free(optr);
 		}
 		
-		
-		while (tptr!=NULL){ // ajustement des numeros de VM
-
+		while (tptr){ // ajustement des numeros de VM
 		//Est-ce le prédécesseur de l'item recherché?
 			tptr->VM.noVM--;
 			//On retourne un pointeur sur l'item précédent	
@@ -193,23 +179,23 @@ void listItems(remove_item_args* arg){
 	printf("noVM  Busy?		Adresse Debut VM                        \n");
 	printf("========================================================\n");
 
-	struct noeudVM * ptr = head;			//premier element
+	noeudVM *ptr = head; //premier element
 
-	while (ptr!=NULL){
+	while (ptr){
 
 		//L'item a un numéro séquentiel dans l'interval défini
-		if ((ptr->VM.noVM>=start)&&(ptr->VM.noVM<=end)){
+		if ((ptr->VM.noVM >= start) && (ptr->VM.noVM <= end)){
 			printf("%d \t %d \t %p\n",
 				ptr->VM.noVM,
-				ptr->VM.busy, ptr->VM.ptrDebutVM);
-			}
-		if (ptr->VM.noVM>end){
+				ptr->VM.busy, ptr->VM.ptrDebutVM
+			);
+		}
+		if (ptr->VM.noVM > end){
 			//L'ensemble des items potentiels sont maintenant passés
 			//Déplacement immédiatement à la FIN de la liste
 			//Notez que le pointeur optr est toujours valide
 			ptr=NULL;
-			}
-		else{
+		} else {
 			ptr = ptr->suivant;
 		}
 
@@ -218,4 +204,3 @@ void listItems(remove_item_args* arg){
 	//Affichage des pieds de colonnes
 	printf("========================================================\n\n");
 }
-

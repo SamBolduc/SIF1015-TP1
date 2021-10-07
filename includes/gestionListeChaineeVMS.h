@@ -5,16 +5,7 @@
 #include <pthread.h>
 #include <unistd.h>
 
-struct infoVM{						
-	int		noVM;
-	unsigned char 	busy; 
-	unsigned short * 	ptrDebutVM;							
-	};								 
-
-struct noeudVM{			
-	struct infoVM	VM;		
-	struct noeudVM		*suivant;
-	};	
+#define VM_SEGMENT_SIZE 65536
 
 typedef struct remove_item_args{
 	int nstart;
@@ -26,11 +17,25 @@ typedef struct execute_file_args{
 	char* fileName;
 } execute_file_args;
 
+typedef struct noeudVM noeudVM;
+typedef struct infoVM infoVM;
+
+struct infoVM {						
+	int			   noVM;
+	unsigned char  busy; 
+	unsigned short *ptrDebutVM;							
+};
+
+struct noeudVM {			
+	infoVM	VM;		
+	noeudVM	*suivant;	
+};
+	
 void cls(void);
 void error(const int exitcode, const char * message);
 
-struct noeudVM * findItem(const int no);
-struct noeudVM * findPrev(const int no);
+noeudVM *findItem(const int no);
+noeudVM *findPrev(const int no);
 
 void  addItem();
 void  removeItem(int* p_nbVM);

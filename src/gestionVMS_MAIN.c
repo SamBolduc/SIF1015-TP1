@@ -14,10 +14,12 @@
 #include "gestionListeChaineeVMS.h"
 #include "gestionVMS.h"
 
+// Variables globales
+
 //Pointeur de tête de liste
-struct noeud* head;
+noeudVM* head;
 //Pointeur de queue de liste pour ajout rapide
-struct noeud* queue;
+noeudVM* queue;
 // nombre de VM actives
 int nbVM;
 
