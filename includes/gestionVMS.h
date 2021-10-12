@@ -91,7 +91,7 @@ void     mem_write(uint16_t * memory, uint16_t address, uint16_t val);
 uint16_t mem_read(uint16_t * memory, uint16_t address);
 
 void* readTrans(char* nomFichier);
-int   executeFile(int noVM, char* sourcefname);
+int   executeFile(execute_file_args* arg);
 
 //struct termios original_tio;
 
