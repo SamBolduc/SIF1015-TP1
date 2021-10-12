@@ -443,13 +443,15 @@ void* readTrans(char* nomFichier) {
 	//Lecture (tentative) d'une ligne de texte
 	fgets(buffer, 100, f);
 
+    pthread_t threadsId[100];
+    int threadsCount = 0;
+
 	//Pour chacune des lignes lues
 	while(!feof(f)) {
 
 		//Extraction du type de transaction
 		tok = strtok_r(buffer, " ", &sp);
 
-        pthread_t thread;
         int ret;
 
         //Branchement selon le type de transaction
@@ -457,7 +459,7 @@ void* readTrans(char* nomFichier) {
             case 'A':
             case 'a':{
                 //Appel de la fonction associée
-                ret = pthread_create(&thread, NULL, (void*) &addItem, NULL); //Ajout d'une VM. Se fait dans un nouveau thread.
+                ret = pthread_create(&threadsId[threadsCount++], NULL, (void*) &addItem, NULL); //Ajout d'une VM. Se fait dans un nouveau thread.
                 break;
             }
             case 'E':
@@ -466,7 +468,7 @@ void* readTrans(char* nomFichier) {
                 int noVM = atoi(strtok_r(NULL, " ", &sp));
 
                 //Appel de la fonction associée
-                ret = pthread_create(&thread, NULL, (void*) &removeItem, (void*) &noVM); //Eliminer une VM. Se fait dans un nouveau thread.
+                ret = pthread_create(&threadsId[threadsCount++], NULL, (void*) &removeItem, (void*) &noVM); //Eliminer une VM. Se fait dans un nouveau thread.
                 break;
             }
             case 'L':
@@ -480,7 +482,7 @@ void* readTrans(char* nomFichier) {
                 args->nend = nend;
 
                 //Appel de la fonction associée
-                ret = pthread_create(&thread, NULL, (void*) &listItems, (void*) args); // Lister les VM. Se fait dans un nouveau thread.
+                ret = pthread_create(&threadsId[threadsCount++], NULL, (void*) &listItems, (void*) args); // Lister les VM. Se fait dans un nouveau thread.
                 break;
             }
             case 'X':
@@ -494,7 +496,7 @@ void* readTrans(char* nomFichier) {
                 args->fileName = nomfich;
 
                 //Appel de la fonction associée
-                ret = pthread_create(&thread, NULL, (void*) &executeFile, (void*) args); //Executer le code binaire du fichier nomFich sur la VM noVM
+                ret = pthread_create(&threadsId[threadsCount++], NULL, (void*) &executeFile, (void*) args); //Executer le code binaire du fichier nomFich sur la VM noVM
                 break;
             }
         }
@@ -505,13 +507,14 @@ void* readTrans(char* nomFichier) {
             break;
         }
 
-        if(tok[0] != 'X' && tok[0] != 'x'){
-            pthread_join(thread, NULL);
-        }
-
 		//Lecture (tentative) de la prochaine ligne de texte
 		fgets(buffer, 100, f);
 	}
+
+    for(int i = 0; i < threadsCount; i++){
+        pthread_join(threadsId[i], NULL);
+    }
+
 	//Fermeture du fichier
 	fclose(f);
 	//Retour
