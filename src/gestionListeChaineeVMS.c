@@ -18,6 +18,9 @@ extern noeudVM* head;  //Pointeur de tête de liste
 extern noeudVM* queue; //Pointeur de queue de liste pour ajout rapide
 extern int nbVM;       // nombre de VM actives
 
+extern semH;
+extern semQ;
+
 //#######################################
 //# Recherche un item dans la liste chaînée
 //# ENTREE: Numéro de la ligne
@@ -26,24 +29,55 @@ extern int nbVM;       // nombre de VM actives
 //#			est introuvable
 //#
 noeudVM* findItem(const int no){
+
+	sem_wait(&semH);
+	sem_wait(&semQ);
 	//La liste est vide 
-	if ((!head)&&(!queue)) return NULL;
+	if ((!head)&&(!queue)){
+		sem_post(&semQ);
+		sem_post(&semH);
+		return NULL;
+	}
 
 	//Pointeur de navigation
-	noeudVM *ptr = head;
+	sem_wait(&head->semVM); // verrouille noeud de tete
+	noeudVM * ptr = head;
+	sem_post(&semQ);
+	sem_post(&semH);
 
-	if(ptr->VM.noVM == no) // premier noeudVM
+	if(ptr->VM.noVM == no) // premier noeudVM 
 		return ptr;
+
+	if(ptr->VM.noVM==no) // premier noeudVM
+		return ptr; // retourner le noeud de tete verrouille
+		
+	if(ptr->suivant!=NULL){
+		sem_wait(&ptr->suivant->semVM); // verrouille noeud suivant de ptr
+	}
+	else{ // ptr->suivant==NULL no invalide
+		sem_post(&ptr->semVM); // deverrouille noeud de tete 
+	}
+
 	//Tant qu'un item suivant existe
-	while (ptr->suivant){
+	while (ptr->suivant!=NULL){
 		//Déplacement du pointeur de navigation
+		noeudVM* optr = ptr;
+	
 		ptr=ptr->suivant;
+		sem_post(&optr->semVM); 
 
 		//Est-ce l'item recherché?
-		if (ptr->VM.noVM == no){
-			return ptr;
+		if (ptr->VM.noVM==no){
+			return ptr; // retourner le noeud verrouille
 		}
+		if(ptr->suivant!=NULL){
+			sem_wait(&ptr->suivant->semVM);
+		}
+		else{ // ptr->suivant==NULL no invalide
+			sem_post(&ptr->semVM); // deverrouille dernier noeud verrouille
+		}		
 	}
+
 	//On retourne un pointeur NULL
 	return NULL;
 }
@@ -95,12 +129,19 @@ void addItem() {
 	//printf("\n noVM=%d busy=%d adrptr VM=%p", ni->VM.noVM, ni->VM.busy, ni->VM.ptrDebutVM);
 	//printf("\n noVM=%d busy=%d adrQ=%p", ni->VM.noVM, ni->VM.busy, queue);
 	ni->suivant = NULL;
+
+	sem_init(&ni->semVM, 0, 1);
+
 	if ((!head) && (!queue)){ //liste vide
 	  queue = head = ni;
 	  return;
 	}
+
+	sem_wait(&semQ);
 	((noeudVM*)queue)->suivant = ni;
 	queue = ni;
+	sem_post(&semQ);
+
 	//printf("\n noVM=%d busy=%d adrQ=%p", ni->VM.noVM, ni->VM.busy, queue);	
 	//printf("\n noVM=%d busy=%d adr Queue=%p", ni->VM.noVM, ni->VM.busy,queue);
 }
@@ -164,6 +205,8 @@ void removeItem(int* p_nbVM){
 		//Déplacement du pointeur de navigation
 			tptr=tptr->suivant;
 		}
+
+		sem_destroy(&ptr->semVM);
 	}
 }
 

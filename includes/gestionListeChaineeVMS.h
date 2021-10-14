@@ -27,7 +27,8 @@ struct infoVM {
 };
 
 struct noeudVM {			
-	infoVM	VM;		
+	infoVM	VM;
+	sem_t semVM;
 	noeudVM	*suivant;	
 };
 	

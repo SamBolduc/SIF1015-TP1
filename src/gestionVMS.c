@@ -151,12 +151,13 @@ int executeFile(execute_file_args* arg){
 	
     if(!ptr) {
         printf("Virtual Machine unavailable\n");
-        return 0;
+        pthread_exit(0);
     }	
 	memory = ptr->VM.ptrDebutVM;
     if (!read_image_file(memory, sourcefname, &origin)) {
         printf("Failed to load image: %s\n", sourcefname);
-        return 0;
+        sem_post(&ptr->semVM);
+        pthread_exit(0);
     }
 	
     while(ptr->VM.busy); // wait for the VM 
@@ -423,7 +424,9 @@ int executeFile(execute_file_args* arg){
     ptr->VM.busy = 0;
     /* Shutdown */
     restore_input_buffering();
-    return 1;
+    sem_post(&ptr->semVM);
+
+    pthread_exit(1);
 }
 
 //#######################################
@@ -443,7 +446,7 @@ void* readTrans(char* nomFichier) {
 	//Lecture (tentative) d'une ligne de texte
 	fgets(buffer, 100, f);
 
-    pthread_t threadsId[100];
+    pthread_t threadsId[1000];
     int threadsCount = 0;
 
 	//Pour chacune des lignes lues
