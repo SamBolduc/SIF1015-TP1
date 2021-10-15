@@ -41,41 +41,36 @@ noeudVM* findItem(const int no){
 	}
 
 	//Pointeur de navigation
-	sem_wait(&head->semVM); // verrouille noeud de tete
+	sem_wait(&head->semVM);
 	noeudVM * ptr = head;
 	sem_post(&semQ);
 	sem_post(&semH);
 
-	if(ptr->VM.noVM == no) // premier noeudVM 
+	if(ptr->VM.noVM == no)
 		return ptr;
-
-	if(ptr->VM.noVM==no) // premier noeudVM
-		return ptr; // retourner le noeud de tete verrouille
 		
-	if(ptr->suivant!=NULL){
-		sem_wait(&ptr->suivant->semVM); // verrouille noeud suivant de ptr
-	}
-	else{ // ptr->suivant==NULL no invalide
-		sem_post(&ptr->semVM); // deverrouille noeud de tete 
+	if(!ptr->suivant){
+		sem_post(&ptr->semVM); //Unlock current VM
+		return NULL;
 	}
 
-	//Tant qu'un item suivant existe
-	while (ptr->suivant!=NULL){
-		//Déplacement du pointeur de navigation
-		noeudVM* optr = ptr;
-	
-		ptr=ptr->suivant;
-		sem_post(&optr->semVM); 
+	sem_wait(&ptr->suivant->semVM);
+		
+	while (ptr->suivant){
+		noeudVM* oldPtr = ptr;
+		ptr = oldPtr->suivant;
 
-		//Est-ce l'item recherché?
+		sem_post(&oldPtr->semVM); //Unlock prev locked VM
+
 		if (ptr->VM.noVM==no){
-			return ptr; // retourner le noeud verrouille
+			return ptr;
 		}
-		if(ptr->suivant!=NULL){
+
+		if(ptr->suivant){
 			sem_wait(&ptr->suivant->semVM);
 		}
-		else{ // ptr->suivant==NULL no invalide
-			sem_post(&ptr->semVM); // deverrouille dernier noeud verrouille
+		else{
+			sem_post(&ptr->semVM);
 		}		
 	}
 
