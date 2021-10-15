@@ -23,7 +23,7 @@ noeudVM* queue;
 // nombre de VM actives
 int nbVM;
 
-sem_t semH, semQ;
+sem_t semH, semQ, semC;
 
 int main(int argc, char* argv[]){
 
@@ -37,6 +37,7 @@ int main(int argc, char* argv[]){
 
 	sem_init(&semH, 0, 1);
 	sem_init(&semQ, 0, 1);
+	sem_init(&semC, 0, 1);
 	
 	readTrans(argv[1]);
 

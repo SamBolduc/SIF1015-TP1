@@ -18,8 +18,9 @@ extern noeudVM* head;  //Pointeur de tête de liste
 extern noeudVM* queue; //Pointeur de queue de liste pour ajout rapide
 extern int nbVM;       // nombre de VM actives
 
-extern semH;
-extern semQ;
+extern sem_t semH;
+extern sem_t semQ;
+extern sem_t semC;
 
 //#######################################
 //# Recherche un item dans la liste chaînée
@@ -218,6 +219,8 @@ void listItems(remove_item_args* arg){
 	int start = arg->nstart;
 	int end = arg->nend;
 
+	sem_wait(&semC);
+
 	//Affichage des entêtes de colonnes
 	printf("noVM  Busy?		Adresse Debut VM                        \n");
 	printf("========================================================\n");
@@ -246,4 +249,5 @@ void listItems(remove_item_args* arg){
 
 	//Affichage des pieds de colonnes
 	printf("========================================================\n\n");
+	sem_post(&semC);
 }

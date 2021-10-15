@@ -22,13 +22,17 @@ extern noeudVM* head;  //Pointeur de tête de liste
 extern noeudVM* queue; //Pointeur de queue de liste pour ajout rapide
 extern int nbVM;       // nombre de VM actives
 
+extern sem_t semH, semQ, semC;
 //#######################################
 //#
 //# Affiche un message et quitte le programme
 //#
 void error(const int exitcode, const char *message) {
-	printf("\n-------------------------\n%s\n", message);
-	exit(exitcode);
+    sem_wait(&semC);
+    printf("\n-------------------------\n%s\n", message);
+    sem_post(&semC);
+
+    exit(exitcode);
 }
 	
 /* Sign Extend */
@@ -150,14 +154,19 @@ int executeFile(execute_file_args* arg){
     struct noeudVM *ptr = findItem(noVM);
 	
     if(!ptr) {
+        sem_wait(&semC);
         printf("Virtual Machine unavailable\n");
-        pthread_exit(0);
-    }	
+        sem_post(&semC);
+        pthread_exit((void*) 0);
+    }
+
 	memory = ptr->VM.ptrDebutVM;
     if (!read_image_file(memory, sourcefname, &origin)) {
+        sem_wait(&semC);
         printf("Failed to load image: %s\n", sourcefname);
+        sem_post(&semC);
         sem_post(&ptr->semVM);
-        pthread_exit(0);
+        pthread_exit((void*) 0);
     }
 	
     while(ptr->VM.busy); // wait for the VM 
@@ -200,7 +209,9 @@ int executeFile(execute_file_args* arg){
                     } else {
                         uint16_t r2 = instr & 0x7;
                         reg[r0] = reg[r1] + reg[r2];
+                        sem_wait(&semC);
                         printf("\n add reg[r0] (sum) = %d", reg[r0]);
+                        sem_post(&semC);
                         //printf("\t add reg[r1] (sum avant) = %d", reg[r1]);
                         //printf("\t add reg[r2] (valeur ajoutee) = %d", reg[r2]);
                     }
@@ -426,7 +437,7 @@ int executeFile(execute_file_args* arg){
     restore_input_buffering();
     sem_post(&ptr->semVM);
 
-    pthread_exit(1);
+    pthread_exit((void*)1);
 }
 
 //#######################################
@@ -506,7 +517,9 @@ void* readTrans(char* nomFichier) {
 
         //Si le code de retour n'est pas '0', alors il y a une erreur et on arrête la lecture du fichier.
         if(ret != 0){
+            sem_wait(&semC);
             printf("An error occurred while creating a new thread. Exiting...");
+            sem_post(&semC);
             break;
         }
 

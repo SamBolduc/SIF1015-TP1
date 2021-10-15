@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "gestionlistechaineevms.h": "c",
+        "gestionvms.h": "c"
+    }
+}
