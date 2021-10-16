@@ -24,8 +24,7 @@ linkedList* head;  //Pointeur de tête de liste
 linkedList* queue; //Pointeur de queue de liste pour ajout rapide
 int nbVM;          // nombre de VM actives
 
-pthread_mutex_t headState;
-pthread_mutex_t threadsState;
+pthread_mutex_t headState; // protects head and queue
 
 int main(int argc, char* argv[]){
 
@@ -37,7 +36,11 @@ int main(int argc, char* argv[]){
 	//"Nettoyage" de la fenêtre console
 	//cls();
 
+	pthread_mutex_init(&headState, NULL);
+
 	readTrans(argv[1]);
+
+	pthread_mutex_destroy(&headState);
 
 
 	//Fin du programme

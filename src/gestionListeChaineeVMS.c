@@ -23,7 +23,6 @@ extern linkedList* queue; //Pointeur de queue de liste pour ajout rapide
 extern int nbVM;       // nombre de VM actives
 
 extern pthread_mutex_t headState;
-extern pthread_mutex_t threadsState;
 
 //#######################################
 //# Recherche un item dans la liste chaînée
@@ -93,7 +92,7 @@ linkedList* appendToLinkedList(linkedList** List, void* newData, size_t dataSize
     return NULL;
 }
 
-void deleteLinkedListNode(linkedList** node){
+void deleteLinkedListNode(linkedList** node) {
     linkedList* nextNode = (linkedList*)(*node)->next;
     free((*node));
     *node = nextNode;
@@ -115,98 +114,27 @@ void freeLinkedList(linkedList** List){
 //# Ajoute un item a la fin de la liste chaînée de VM
 //# ENTREE: 
 //#	RETOUR:  
-
-void* addItem_T(void* args){
-	pthread_mutex_lock(&headState);
+void addItem(){
 	//Création de l'enregistrement en mémoire
-	infoVM* newVM = (infoVM*)malloc(sizeof(infoVM));
+	infoVM* newVM = (infoVM*)calloc(1, sizeof(infoVM));
 
 	//Affectation des valeurs des champs
 	newVM->noVM = ++nbVM;
-	newVM->busy = 0;
 	newVM->ptrDebutVM = (unsigned short*)malloc(sizeof(unsigned short)*VM_SEGMENT_SIZE);
-
+	
+	pthread_mutex_lock(&headState);
 	queue = appendToLinkedList(&head, newVM, sizeof(infoVM));
-
+	pthread_create(&((infoVM*)queue->data)->vmProcess, NULL, &virtualMachine, ((infoVM*)queue->data));
 	pthread_mutex_unlock(&headState);
-
-	//printf("ADD OVER\n");
-
-	return NULL;
-}
-
-void addItem() {
-	pthread_t threadID;
-	pthread_create(&threadID, NULL, &addItem_T, NULL);
-
-	pthread_mutex_lock(&threadsState);
-	appendToLinkedList(&threads, &threadID, sizeof(pthread_t));
-	pthread_mutex_unlock(&threadsState);
 }
 
 //#######################################
-//# Retire un item de la liste chaînée
+//# Flag a vm for deletion
 //# ENTREE: noVM: numéro du noeud a retirer 
-void* removeItem_T(void* args){
+void removeItem(const int noVM){
+	linkedList* VM = findItem(noVM);
 
-	pthread_mutex_lock(&headState);
-
-	printf("vm no %d threre is %d VMS\n", *(int*)args, nbVM);
-
-	linkedList** list = NULL;
-
-	/* Search for the vm to delete. Retry if not found */
-	while (!list) {
-		list = findPrev(*(int*)args);
-
-		if (list) {
-			printf("listid : %d\n", ((infoVM*)(*list)->data)->noVM);
-			break;
-		} else {
-			printf("Searching for vm ...\n");
-		}
-
-		pthread_mutex_unlock(&headState);
-		sleep(1);
-		pthread_mutex_lock(&headState);
-	}
-
-	/* Wait for the vm to complete its tasks */
-	while (((infoVM*)((*list)->data))->busy){
-		printf("VM Busy\n");
-		pthread_mutex_unlock(&headState);
-		sleep(1);
-		pthread_mutex_lock(&headState);
-	}
-
-	deleteLinkedListNode(list);
-
-	/* Assign the end of the list to the queue */
-	if (*list){
-		while((*list)->next){
-			list = &((*list)->next);
-		}
-		queue = *list;
-	}
-
-	pthread_mutex_unlock(&headState);
-
-	free(args);
-
-	//printf("REMOVE OVER\n");
-
-	return NULL;
-}
-
-void removeItem(const int noVM) {
-	pthread_t threadID;
-	int* noVM_p = (int*)malloc(sizeof(int));
-	*noVM_p = noVM;
-	pthread_create(&threadID, NULL, &removeItem_T, noVM_p);
-
-	pthread_mutex_lock(&threadsState);
-	appendToLinkedList(&threads, &threadID, sizeof(pthread_t));
-	pthread_mutex_unlock(&threadsState);
+	((infoVM*)VM->data)->kill = 1;
 }
 
 //#######################################
@@ -219,40 +147,20 @@ typedef struct {
 	int y;
 } Vector2i;
 
-void* listItems_T(void* args){
-
+void listItems(const int start, const int end) {
 	int i;
 	//Affichage des entêtes de colonnes
 	pthread_mutex_lock(&headState);
-	printf("noVM  Busy?		Adresse Debut VM                        \n");
-	printf("========================================================\n");
+	printf("noVM    Busy?    Adresse Debut VM        kill ?              \n");
+	printf("=============================================================\n");
 	linkedList *ptr = head; //premier element
-	for (i = ((Vector2i*)args)->x; (i <= ((Vector2i*)args)->y) && ptr; i++) {
-		printf("%d \t %d \t %p\n", ((infoVM*)ptr->data)->noVM, ((infoVM*)ptr->data)->busy, ((infoVM*)ptr->data)->ptrDebutVM);
+	for (i = start; (i <= end) && ptr; i++) {
+		printf("%d \t %d \t %p \t %s\n", ((infoVM*)ptr->data)->noVM, ((infoVM*)ptr->data)->busy, ((infoVM*)ptr->data)->ptrDebutVM, ((infoVM*)ptr->data)->kill ? "flagged for deletion" : "alive");
 		
 		ptr = ptr->next;
 	}
 
 	//Affichage des pieds de colonnes
-	printf("========================================================\n\n");
+	printf("=============================================================\n\n");
 	pthread_mutex_unlock(&headState);
-
-	free(args);
-
-	//printf("LIST OVER\n");
-
-	return NULL;
-}
-
-void listItems(const int start, const int end){
-	pthread_t threadID;
-	Vector2i* args = (Vector2i*)malloc(sizeof(Vector2i));
-	args->x = start;
-	args->y = end;
-
-	pthread_create(&threadID, NULL, &listItems_T, args);
-
-	pthread_mutex_lock(&threadsState);
-	appendToLinkedList(&threads, &threadID, sizeof(pthread_t));
-	pthread_mutex_unlock(&threadsState);
 }

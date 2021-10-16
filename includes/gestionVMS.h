@@ -13,6 +13,8 @@
 #include <sys/termios.h>
 #include <sys/mman.h>
 
+#include "types.h"
+
 #define VM_IMAGE_OFFSET 0x3000
 
 /* Registers */
@@ -73,11 +75,6 @@ enum {
     TRAP_HALT  = 0x25   /* halt the program */
 };
 
-typedef enum {
-    false,
-    true
-} bool;
-
 // Function prototypes
 
 uint16_t sign_extend(uint16_t x, int bit_count);
@@ -89,7 +86,8 @@ void     mem_write(uint16_t * memory, uint16_t address, uint16_t val);
 uint16_t mem_read(uint16_t * memory, uint16_t address);
 
 void* readTrans(char* nomFichier);
-int   executeFile(int noVM, char* sourcefname);
+int executeFile(infoVM* VM, char* sourcefname);
+void* virtualMachine(void* args);
 
 //struct termios original_tio;
 
