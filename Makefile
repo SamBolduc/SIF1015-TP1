@@ -11,7 +11,7 @@ CC = gcc
 OUT = VMS
 
 # Flags
-CFLAGS += -c -Wall -g
+CFLAGS += -c -Wall -g -std=c89 -pedantic-errors
 LDFLAGS += -lpthread
 
 SRC = $(call rwildcard,,*.c)
