@@ -15,12 +15,17 @@
 #include "gestionVMS.h"
 
 #include <linux/limits.h>
+#include <pthread.h>
 
 #define cls() system("clear")
 
-extern noeudVM* head;  //Pointeur de tête de liste
-extern noeudVM* queue; //Pointeur de queue de liste pour ajout rapide
+extern linkedList* threads;
+
+extern linkedList* head;  //Pointeur de tête de liste
+extern linkedList* queue; //Pointeur de queue de liste pour ajout rapide
 extern int nbVM;       // nombre de VM actives
+
+extern pthread_mutex_t headState;
 
 //#######################################
 //#
@@ -135,9 +140,8 @@ void handle_interrupt(int signal) {
 //#
 //# Execute le fichier de code .obj 
 //#
-int executeFile(execute_file_args* arg){
-    int noVM = arg->noVM;
-    char* sourcefname = arg->fileName;
+int executeFile(infoVM* VM, char* sourcefname){
+// int noVM, char* sourcefname
 
 /* Memory Storage */
 /* 65536 locations */
@@ -146,26 +150,19 @@ int executeFile(execute_file_args* arg){
 	
 /* Register Storage */
 	uint16_t reg[R_COUNT];
-	
-    struct noeudVM *ptr = findItem(noVM);
-	
-    if(!ptr) {
-        printf("Virtual Machine unavailable\n");
-        return 0;
-    }	
-	memory = ptr->VM.ptrDebutVM;
+
+	memory = VM->ptrDebutVM;
     if (!read_image_file(memory, sourcefname, &origin)) {
-        printf("Failed to load image: %s\n", sourcefname);
-        return 0;
+        printf("VM %d : Failed to load image: %s\n", VM->noVM, sourcefname);
+        return(0);
     }
-	
-    while(ptr->VM.busy); // wait for the VM 
-	// Acquiring access to the VM
-    ptr->VM.busy = 1;
     
     /* Setup */
+    VM->busy = true;
     signal(SIGINT, handle_interrupt);
-    disable_input_buffering();
+    
+    // TEMP
+    //disable_input_buffering();
 
     /* set the PC to starting position */
     /* at  ptr->VM.ptrDebutVM + 0x3000 is the default  */
@@ -199,7 +196,7 @@ int executeFile(execute_file_args* arg){
                     } else {
                         uint16_t r2 = instr & 0x7;
                         reg[r0] = reg[r1] + reg[r2];
-                        printf("\n add reg[r0] (sum) = %d", reg[r0]);
+                        printf("\nVM %d : add reg[r0] (sum) = %d", VM->noVM, reg[r0]);
                         //printf("\t add reg[r1] (sum avant) = %d", reg[r1]);
                         //printf("\t add reg[r2] (valeur ajoutee) = %d", reg[r2]);
                     }
@@ -376,7 +373,7 @@ int executeFile(execute_file_args* arg){
                     case TRAP_IN:
                         /* TRAP IN */
                         {
-                            printf("Enter a character: ");
+                            printf("VM %d : Enter a character: ", VM->noVM);
                             char c = getchar();
                             putc(c, stdout);
                             reg[R_R0] = (uint16_t)c;
@@ -420,10 +417,39 @@ int executeFile(execute_file_args* arg){
                 break;
         }
     }
-    ptr->VM.busy = 0;
     /* Shutdown */
-    restore_input_buffering();
-    return 1;
+    VM->busy = false;
+    //restore_input_buffering();
+    
+    return(1);
+}
+
+int dispatchJob(int noVM, char* sourcefname){
+    linkedList *VM = findItem(noVM);
+    
+    if (!((infoVM*)VM->data)->kill){
+        printf("Job %s dispatched to vm %d !\n", sourcefname, noVM);
+        appendToLinkedList(&((infoVM*)VM->data)->binaryList, sourcefname, sizeof(char)*strlen(sourcefname));
+    } else {
+        printf("Couldn't dispatch job %s ! VM %d already flagged for deletion !\n", sourcefname, noVM);
+    }
+
+    return(1);
+}
+
+void* virtualMachine(void* args) {
+    infoVM* self = (infoVM*)args;
+
+    self->busy = false;
+    while (!self->kill || self->binaryList) {
+        if (self->binaryList) {
+            printf("VM %d executing !\n", self->noVM);
+            executeFile(self, self->binaryList->data); /* Executing Current Job */
+            deleteLinkedListNode(&self->binaryList); /* Free completed Job */
+        }
+    }
+
+    return NULL;
 }
 
 //#######################################
@@ -432,7 +458,7 @@ int executeFile(execute_file_args* arg){
 //# ENTREE: Nom de fichier de transactions 
 //# SORTIE: 
 void* readTrans(char* nomFichier) {
-	FILE *f;
+    FILE *f;
 	char buffer[100];
 	char *tok, *sp;
 
@@ -443,78 +469,66 @@ void* readTrans(char* nomFichier) {
 	//Lecture (tentative) d'une ligne de texte
 	fgets(buffer, 100, f);
 
-    pthread_t threadsId[100];
-    int threadsCount = 0;
-
 	//Pour chacune des lignes lues
 	while(!feof(f)) {
-
 		//Extraction du type de transaction
 		tok = strtok_r(buffer, " ", &sp);
 
-        int ret;
-
-        //Branchement selon le type de transaction
-        switch(tok[0]){
-            case 'A':
-            case 'a':{
-                //Appel de la fonction associée
-                ret = pthread_create(&threadsId[threadsCount++], NULL, (void*) &addItem, NULL); //Ajout d'une VM. Se fait dans un nouveau thread.
-                break;
-            }
-            case 'E':
-            case 'e':{
-                //Extraction du paramètre
-                int noVM = atoi(strtok_r(NULL, " ", &sp));
-
-                //Appel de la fonction associée
-                ret = pthread_create(&threadsId[threadsCount++], NULL, (void*) &removeItem, (void*) &noVM); //Eliminer une VM. Se fait dans un nouveau thread.
-                break;
-            }
-            case 'L':
-            case 'l':{
-                //Extraction des paramètres
-                int nstart = atoi(strtok_r(NULL, "-", &sp));
-                int nend = atoi(strtok_r(NULL, " ", &sp));
-
-                remove_item_args *args = malloc(sizeof(remove_item_args)); //Création de la struct pour stocker les paramètres.
-                args->nstart = nstart;
-                args->nend = nend;
-
-                //Appel de la fonction associée
-                ret = pthread_create(&threadsId[threadsCount++], NULL, (void*) &listItems, (void*) args); // Lister les VM. Se fait dans un nouveau thread.
-                break;
-            }
-            case 'X':
-            case 'x':{
-                //Extraction des paramètres
-                int noVM = atoi(strtok_r(NULL, " ", &sp));
-                char *nomfich = strtok_r(NULL, "\n", &sp);
-
-                execute_file_args *args = malloc(sizeof(execute_file_args));
-                args->noVM = noVM;
-                args->fileName = nomfich;
-
-                //Appel de la fonction associée
-                ret = pthread_create(&threadsId[threadsCount++], NULL, (void*) &executeFile, (void*) args); //Executer le code binaire du fichier nomFich sur la VM noVM
-                break;
-            }
-        }
-
-        //Si le code de retour n'est pas '0', alors il y a une erreur et on arrête la lecture du fichier.
-        if(ret != 0){
-            printf("An error occurred while creating a new thread. Exiting...");
-            break;
-        }
-
+		//Branchement selon le type de transaction
+		switch(tok[0]) {
+			case 'A':
+			case 'a':
+				//Appel de la fonction associée
+				addItem(); // Ajout de une VM
+				break;
+			case 'E':
+			case 'e':
+                {
+                    //Extraction du paramètre
+                    int noVM = atoi(strtok_r(NULL, " ", &sp));
+                    //Appel de la fonction associée
+                    removeItem(noVM); // Eliminer une VM
+                    break;
+				}
+			case 'L':
+			case 'l':
+                {
+				    //Extraction des paramètres
+                    int nstart = atoi(strtok_r(NULL, "-", &sp));
+                    int nend = atoi(strtok_r(NULL, " ", &sp));
+                    //Appel de la fonction associée
+                    listItems(nstart, nend); // Lister les VM
+                    break;
+				}
+			case 'X':
+			case 'x':
+                {
+                    //Appel de la fonction associée
+                    int noVM = atoi(strtok_r(NULL, " ", &sp));
+                    char *nomfich = strtok_r(NULL, "\n", &sp);
+                    dispatchJob(noVM, nomfich); // Executer le code binaire du fichier nomFich sur la VM noVM
+                    break;
+				}
+		}
 		//Lecture (tentative) de la prochaine ligne de texte
 		fgets(buffer, 100, f);
 	}
 
-    for(int i = 0; i < threadsCount; i++){
-        pthread_join(threadsId[i], NULL);
+    pthread_mutex_lock(&headState);
+    queue = head;
+    while (queue){ /* Flags all VMS for deletion */
+        ((infoVM*)queue->data)->kill = true;
+        queue = queue->next;
     }
 
+    while (head){
+        printf("Waiting for vm %d\n", ((infoVM*)head->data)->noVM);
+        pthread_join(((infoVM*)head->data)->vmProcess, NULL);
+        printf("VM %d done\n", ((infoVM*)head->data)->noVM);
+        deleteLinkedListNode(&head); 
+    }
+    pthread_mutex_unlock(&headState);
+    queue = head = NULL;
 	//Fermeture du fichier
 	fclose(f);
 	//Retour

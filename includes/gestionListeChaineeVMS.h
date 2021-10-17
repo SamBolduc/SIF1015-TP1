@@ -5,40 +5,35 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#include "types.h"
+
 #define VM_SEGMENT_SIZE 65536
 
-typedef struct remove_item_args{
-	int nstart;
-	int nend;
-} remove_item_args;
-
-typedef struct execute_file_args{
-	int noVM;
-	char* fileName;
-} execute_file_args;
-
-typedef struct noeudVM noeudVM;
+typedef struct linkedList linkedList;
 typedef struct infoVM infoVM;
 
-struct infoVM {						
-	int			   noVM;
-	unsigned char  busy; 
-	unsigned short *ptrDebutVM;							
+struct linkedList {
+	void* data;
+	linkedList* next;
 };
 
-struct noeudVM {			
-	infoVM	VM;		
-	noeudVM	*suivant;	
+struct infoVM {
+	unsigned int   noVM;
+	unsigned char  busy;
+	unsigned short *ptrDebutVM;
+	pthread_t vmProcess;
+	linkedList* binaryList;
+	bool kill;
 };
 	
 void cls(void);
 void error(const int exitcode, const char * message);
 
-noeudVM *findItem(const int no);
-noeudVM *findPrev(const int no);
+linkedList *findItem(const int no);
+linkedList **findPrev(const int no);
 
-void  addItem();
-void  removeItem(int* p_nbVM);
-void  listItems(remove_item_args* arg);
-void* readTrans(char* nomFichier);
-void  saveItems(const char* sourcefname);
+linkedList* appendToLinkedList(linkedList** List, void* newData, size_t dataSize);
+void 		deleteLinkedListNode(linkedList** node);
+void 		addItem();
+void 		removeItem(const int noVM);
+void 		listItems(const int start, const int end);
