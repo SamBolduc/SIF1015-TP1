@@ -147,6 +147,15 @@ void removeItem(const int noVM){
 	linkedList* VM = findItem(noVM);
 
 	((infoVM*)VM->data)->kill = 1;
+	((infoVM*)VM->data)->noVM = 0;
+	nbVM--;
+
+	VM = VM->next;
+	while (VM) {
+		if (((infoVM*)VM->data)->noVM)
+			((infoVM*)VM->data)->noVM--;
+		VM = VM->next;
+	}
 }
 
 /*
