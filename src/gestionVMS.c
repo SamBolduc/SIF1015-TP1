@@ -29,6 +29,7 @@ extern linkedList* queue; /* Pointeur de queue de liste pour ajout rapide */
 extern int nbVM;          /* nombre de VM actives */
 
 extern pthread_mutex_t headState;
+extern pthread_mutex_t consoleState;
 
 /*
   #######################################
@@ -37,7 +38,9 @@ extern pthread_mutex_t headState;
   #
 */
 void error(const int exitcode, const char *message) {
+    pthread_mutex_lock(&consoleState);
 	printf("\n-------------------------\n%s\n", message);
+    pthread_mutex_unlock(&consoleState);
 	exit(exitcode);
 }
 	
@@ -145,7 +148,9 @@ void restore_input_buffering() {
 /* Handle Interrupt */
 void handle_interrupt(int signal) {
     restore_input_buffering();
+    pthread_mutex_lock(&consoleState);
     printf("\n");
+    pthread_mutex_unlock(&consoleState);
     exit(-2);
 }
 
@@ -428,6 +433,7 @@ int executeFile(infoVM* VM, char* sourcefname){
                 break;
         }
     }
+
     /* Shutdown */
     VM->busy = false;
     /* restore_input_buffering(); */
@@ -438,12 +444,15 @@ int executeFile(infoVM* VM, char* sourcefname){
 int dispatchJob(int noVM, char* sourcefname){
     linkedList *VM = findItem(noVM);
     
+    pthread_mutex_lock(&consoleState);
     if (!((infoVM*)VM->data)->kill){
-        printf("Job %s dispatched to vm %d !\n", sourcefname, noVM);
+        printf("Job %s dispatched to vm %d !\n", sourcefname, noVM);        
         appendToLinkedList(&((infoVM*)VM->data)->binaryList, sourcefname, sizeof(char)*strlen(sourcefname));
     } else {
         printf("Couldn't dispatch job %s ! VM %d already flagged for deletion !\n", sourcefname, noVM);
     }
+
+    pthread_mutex_unlock(&consoleState);
 
     return(1);
 }
@@ -454,8 +463,12 @@ void* virtualMachine(void* args) {
     self->busy = false;
     while (!self->kill || self->binaryList) {
         if (self->binaryList) {
+            
+            pthread_mutex_lock(&consoleState);
             printf("VM %d executing !\n", self->noVM);
             executeFile(self, self->binaryList->data); /* Executing Current Job */
+            pthread_mutex_unlock(&consoleState);
+
             deleteLinkedListNode(&self->binaryList);   /* Free completed Job */
         }
     }

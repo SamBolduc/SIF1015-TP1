@@ -24,7 +24,7 @@ extern linkedList* queue; /* Pointeur de queue de liste pour ajout rapide */
 extern int nbVM;       	  /* nombre de VM actives */
 
 extern pthread_mutex_t headState;
-
+extern pthread_mutex_t consoleState;
 /*
   #######################################
   # Recherche un item dans la liste chaînée
@@ -169,6 +169,7 @@ void listItems(const int start, const int end) {
 	linkedList *ptr;
 	/* Affichage des entêtes de colonnes */
 	pthread_mutex_lock(&headState);
+	pthread_mutex_lock(&consoleState);
 	printf("noVM    Busy?    Adresse Debut VM        kill ?              \n");
 	printf("=============================================================\n");
 	ptr = head; /* premier element */
@@ -180,5 +181,6 @@ void listItems(const int start, const int end) {
 
 	/* Affichage des pieds de colonnes */
 	printf("=============================================================\n\n");
+	pthread_mutex_unlock(&consoleState);
 	pthread_mutex_unlock(&headState);
 }
