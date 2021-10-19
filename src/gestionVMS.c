@@ -540,7 +540,7 @@ void* readTrans(char* nomFichier) {
 		fgets(buffer, 100, f);
 	}
 
-    pthread_mutex_lock(&headState);
+    pthread_mutex_lock(&headState); /* Lock head */
     queue = head;
     while (queue){ /* Flags all VMS for deletion */
         ((infoVM*)queue->data)->kill = true;
@@ -553,9 +553,10 @@ void* readTrans(char* nomFichier) {
         printf("VM %d done\n", ((infoVM*)head->data)->noVM);
         deleteLinkedListNode(&head); 
     }
-    pthread_mutex_unlock(&headState);
     queue = head = NULL;
-	/* Fermeture du fichier */
+    pthread_mutex_unlock(&headState); /* Unlock head */
+
+    /* Fermeture du fichier */
 	fclose(f);
 	
     return NULL;

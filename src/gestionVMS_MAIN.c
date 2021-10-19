@@ -26,7 +26,7 @@ linkedList* queue; /* Pointeur de queue de liste pour ajout rapide */
 int nbVM;          /* nombre de VM actives */
 
 pthread_mutex_t headState; /* protects head and queue */
-pthread_mutex_t consoleState;
+pthread_mutex_t consoleState; /* Protects console */
 
 int main(int argc, char* argv[]){
 

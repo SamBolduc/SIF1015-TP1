@@ -132,10 +132,10 @@ void addItem(){
 	newVM->noVM = ++nbVM;
 	newVM->ptrDebutVM = (unsigned short*)malloc(sizeof(unsigned short)*VM_SEGMENT_SIZE);
 	
-	pthread_mutex_lock(&headState);
-	queue = appendToLinkedList(&head, newVM, sizeof(infoVM));
-	pthread_create(&((infoVM*)queue->data)->vmProcess, NULL, &virtualMachine, ((infoVM*)queue->data));
-	pthread_mutex_unlock(&headState);
+	pthread_mutex_lock(&headState); /* Lock head */
+	queue = appendToLinkedList(&head, newVM, sizeof(infoVM)); /* Add the VM to the linked list */
+	pthread_create(&((infoVM*)queue->data)->vmProcess, NULL, &virtualMachine, ((infoVM*)queue->data)); /* Create the VM in a new thread */
+	pthread_mutex_unlock(&headState); /* Unlock head */
 }
 
 /*
@@ -168,8 +168,8 @@ void listItems(const int start, const int end) {
 	int i;
 	linkedList *ptr;
 	/* Affichage des entêtes de colonnes */
-	pthread_mutex_lock(&headState);
-	pthread_mutex_lock(&consoleState);
+	pthread_mutex_lock(&headState); /* Lock head */
+	pthread_mutex_lock(&consoleState); /* Lock console */
 	printf("noVM    Busy?    Adresse Debut VM        kill ?              \n");
 	printf("=============================================================\n");
 	ptr = head; /* premier element */
@@ -181,6 +181,6 @@ void listItems(const int start, const int end) {
 
 	/* Affichage des pieds de colonnes */
 	printf("=============================================================\n\n");
-	pthread_mutex_unlock(&consoleState);
-	pthread_mutex_unlock(&headState);
+	pthread_mutex_unlock(&consoleState); /* Unlock console */
+	pthread_mutex_unlock(&headState); /* Unlock head */
 }
