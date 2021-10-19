@@ -36,7 +36,9 @@ int main(int argc, char* argv[]){
 	nbVM = 0;
 
 	pthread_mutex_init(&headState, NULL);
+  pthread_mutex_init(&consoleState, NULL);
 	readTrans(argv[1]);
+  pthread_mutex_destroy(&consoleState);
 	pthread_mutex_destroy(&headState);
 
 	exit( 0);
