@@ -13,6 +13,7 @@
   #######################################
 */
 #define _POSIX_SOURCE
+#define _GNU_SOURCE
 
 #include "gestionListeChaineeVMS.h"
 #include "gestionVMS.h"
@@ -494,8 +495,10 @@ void* virtualMachine(void* args) {
   # ENTREE: Nom de fichier de transactions 
   # SORTIE: 
 */
+#define CLIENT_FIFO_NAME "/tmp/cli_%u_fifo"
 void* readTrans(char* nomFichier) {
-    FILE *f;
+    int f, client_fifo_fd;
+    ssize_t bufferEnd = 0;
 	char buffer[100];
 	char *tok, *sp;
 
@@ -512,20 +515,38 @@ void* readTrans(char* nomFichier) {
 
     printf("Attempting to open fifo ... \n");
 	/* Ouverture du fichier en mode "r" (equiv. "rt") : [r]ead [t]ext */
-	if (!(f= fopen(nomFichier, "rt"))) error(2, "readTrans [%s/%u]: Erreur lors de l'ouverture du fichier.\n", __FILE__, __LINE__);
+	if (!(f = open(nomFichier, O_RDONLY)))
+        error(2, "readTrans [%s/%u]: Erreur lors de l'ouverture du fichier.\n", __FILE__, __LINE__);
+
     printf("Success\n");
     
     printf("Listening for transactions ...\n");
-	/* Lecture (tentative) d'une ligne de texte */
-	fgets(buffer, 100, f);
 
 	/* Pour chacune des lignes lues */
-	while(!feof(f)) {
+	while((bufferEnd = read(f, buffer, 100)) != -1) {
+        buffer[bufferEnd-1] = '\0';
+        printf("Transaction received [%s]\n", buffer);
 		/* Extraction du type de transaction */
 		tok = strtok_r(buffer, " ", &sp);
 
 		/* Branchement selon le type de transaction */
 		switch(tok[0]) {
+            case 'C':
+            case 'c':
+                {
+                    pid_t clientPID = atoi(strtok_r(NULL, " ", &sp));
+                    char* clientFIFOPath = NULL;
+                    printf("Connecting to client %u ...\n", clientPID);
+                    asprintf(&clientFIFOPath, CLIENT_FIFO_NAME, clientPID);
+                    if (!(client_fifo_fd = open(clientFIFOPath, O_WRONLY))){
+                        free(clientFIFOPath);
+                        error(2, "readTrans [%s/%u]: Erreur lors de l'ouverture du fichier.\n", __FILE__, __LINE__);
+                    }
+                    free(clientFIFOPath);
+                    printf("Success !\n");
+                }
+                break;
+
 			case 'A':
 			case 'a':
 				/* Appel de la fonction associée */
@@ -560,8 +581,6 @@ void* readTrans(char* nomFichier) {
                     break;
 				}
 		}
-		/* Lecture (tentative) de la prochaine ligne de texte */
-		fgets(buffer, 100, f);
 	}
 
     pthread_mutex_lock(&headState); /* Lock head */
@@ -581,7 +600,7 @@ void* readTrans(char* nomFichier) {
     pthread_mutex_unlock(&headState); /* Unlock head */
 
     /* Fermeture du fichier */
-	fclose(f);
+	close(f);
 	
     return NULL;
 }
