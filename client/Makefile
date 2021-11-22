@@ -27,12 +27,12 @@ WINCC = x86_64-w64-mingw32-gcc
 
 # Compile / Link Flags
 CFLAGS += -c -Wall -std=c99 -pedantic-errors -g
-LDFLAGS = -lpthread
+LDFLAGS =
 
 WINLDFLAGS = "-L /usr/x86_64-w64-mingw32/lib/ -lmingw32 -lz -llzm -lm -mwindows"
 
 # Main target and filename of the executable
-OUT = Server_VMS
+OUT = Client_VMS
 
 # Build Directory
 BUILD_DIR = build
@@ -71,4 +71,13 @@ $(OUT): $(OBJ)
 
 clean:
 	@echo "Cleaning Build"
-	@rm -rf build $(OUT)
+	@rm -rf $(BUILD_DIR) $(OUT) $(OUT).exe
+
+rebuild: clean multi
+#@$(MAKE) -j$(CPUS) --no-print-directory all
+
+run:
+	./$(OUT)
+
+windows:
+	@$(MAKE) --no-print-directory rebuild CC=$(WINCC) OUT=$(OUT).exe LIBS=$(WINLIBS) LDFLAGS+=$(WINLDFLAGS)

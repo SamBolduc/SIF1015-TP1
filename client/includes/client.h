@@ -7,8 +7,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#define SERVER_FIFO_NAME "./tmp/serv_fifo"
-#define CLIENT_FIFO_NAME "./tmp/cli_%d_fifo"
+#define SERVER_FIFO_NAME "/tmp/serv_fifo"
+#define CLIENT_FIFO_NAME "/tmp/cli_%d_fifo"
 
 #define BUFFER_SIZE 20
 
