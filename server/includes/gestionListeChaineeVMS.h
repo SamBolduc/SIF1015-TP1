@@ -27,7 +27,6 @@ struct infoVM {
 };
 	
 void cls(void);
-void error(const int exitcode, const char * message);
 
 linkedList *findItem(const int no);
 linkedList **findPrev(const int no);

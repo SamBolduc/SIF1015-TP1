@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include <string.h>
 #include <signal.h>
 #include <pthread.h>
@@ -77,6 +78,7 @@ enum {
     TRAP_HALT  = 0x25   /* halt the program */
 };
 
+void error(const int exitcode, const char* format, ...);
 uint16_t sign_extend(uint16_t x, int bit_count);
 uint16_t swap16(uint16_t x);
 void     update_flags(uint16_t reg[R_COUNT], uint16_t r);

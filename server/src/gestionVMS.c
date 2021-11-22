@@ -19,6 +19,8 @@
 
 #include <linux/limits.h>
 #include <pthread.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #define cls() system("clear")
 
@@ -37,9 +39,18 @@ extern pthread_mutex_t consoleState;
   # Affiche un message et quitte le programme
   #
 */
-void error(const int exitcode, const char *message) {
+void error(const int exitcode, const char* format, ...) {
+    va_list args;
+
     pthread_mutex_lock(&consoleState);
-	printf("\n-------------------------\n%s\n", message);
+
+    va_start(args, format);
+
+	printf("\n-------------------------\n");
+    vprintf(format, args);
+
+    va_end(args);
+
     pthread_mutex_unlock(&consoleState);
 	exit(exitcode);
 }
@@ -488,10 +499,23 @@ void* readTrans(char* nomFichier) {
 	char buffer[100];
 	char *tok, *sp;
 
-	/* Ouverture du fichier en mode "r" (equiv. "rt") : [r]ead [t]ext */
-	f = fopen(nomFichier, "rt");
-	if (!f) error(2, "readTrans: Erreur lors de l'ouverture du fichier.");
 
+    if (!nomFichier)
+        error(-1, "[%s/%u] No fifo provided !\n", __FILE__, __LINE__);
+
+    // Test if the fifo exists
+    if (access(nomFichier, F_OK) == -1) {
+        if (mkfifo(nomFichier, 0777) == -1) {
+            error(-1, "[%s/%u] Couldn't create fifo (%s)\n", __FILE__, __LINE__, nomFichier);
+        }
+    }
+
+    printf("Attempting to open fifo ... \n");
+	/* Ouverture du fichier en mode "r" (equiv. "rt") : [r]ead [t]ext */
+	if (!(f= fopen(nomFichier, "rt"))) error(2, "readTrans [%s/%u]: Erreur lors de l'ouverture du fichier.\n", __FILE__, __LINE__);
+    printf("Success\n");
+    
+    printf("Listening for transactions ...\n");
 	/* Lecture (tentative) d'une ligne de texte */
 	fgets(buffer, 100, f);
 

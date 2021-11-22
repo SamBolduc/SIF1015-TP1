@@ -71,4 +71,13 @@ $(OUT): $(OBJ)
 
 clean:
 	@echo "Cleaning Build"
-	@rm -rf build $(OUT)
+	@rm -rf $(BUILD_DIR) $(OUT) $(OUT).exe
+
+rebuild: clean multi
+#@$(MAKE) -j$(CPUS) --no-print-directory all
+
+run:
+	./$(OUT)
+
+windows:
+	@$(MAKE) --no-print-directory rebuild CC=$(WINCC) OUT=$(OUT).exe LIBS=$(WINLIBS) LDFLAGS+=$(WINLDFLAGS)
