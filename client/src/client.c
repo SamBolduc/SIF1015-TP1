@@ -3,47 +3,82 @@
 // of the data that will be sent to the server. The client FIFO is created, ready for
 // the next section.
 
+#define _GNU_SOURCE
+
 #include "client.h"
 #include <ctype.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <fcntl.h>
+#include <limits.h>
+#include <stdbool.h>
 
-int main()
-{
+void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd) {
+    const unsigned int maxCommandLength = 100;
+    char commandBuffer[maxCommandLength];
+
+    printf("Connecting to server\n");
+
+    while (true) { // Main loop
+        fgets(commandBuffer, maxCommandLength, stdin);
+        dprintf(server_fifo_fd, "%s", commandBuffer);
+    }
+}
+
+int main() {
+    pid_t clientPID;
     int server_fifo_fd, client_fifo_fd;
-    struct data_to_pass_st my_data;
-    int times_to_send;
-    char client_fifo[256];
+    char* client_fifo = NULL;
 
+    // Open server fifo
+    printf("Oppening Server FIFO ...\n");
     server_fifo_fd = open(SERVER_FIFO_NAME, O_WRONLY);
     if (server_fifo_fd == -1) {
         fprintf(stderr, "Sorry, no server\n");
         exit(EXIT_FAILURE);
     }
+    printf("Success !\n");
 
-    my_data.client_pid = getpid();
-    sprintf(client_fifo, CLIENT_FIFO_NAME, my_data.client_pid);
+    // Create client fifo
+    printf("Creating Client FIFO ...\n");
+    clientPID = getpid();
+    asprintf(&client_fifo, CLIENT_FIFO_NAME, clientPID);
     if (mkfifo(client_fifo, 0777) == -1) {
         fprintf(stderr, "Sorry, can't make %s\n", client_fifo);
-        exit(EXIT_FAILURE);
+        goto Error;
     }
+    printf("Success !\n");
 
-// For each of the five loops, the client data is sent to the server.
-// Then the client FIFO is opened (read-only, blocking mode) and the data read back.
-// Finally, the server FIFO is closed and the client FIFO removed from memory.
 
-    for (times_to_send = 0; times_to_send < 5; times_to_send++) {
-        sprintf(my_data.some_data, "Hello from %d", my_data.client_pid); 
-        printf("%d sent %s, ", my_data.client_pid, my_data.some_data);
-        write(server_fifo_fd, &my_data, sizeof(my_data));
-        client_fifo_fd = open(client_fifo, O_RDONLY);
-        if (client_fifo_fd != -1) {
-            if (read(client_fifo_fd, &my_data, sizeof(my_data)) > 0) {
-                printf("received: %s\n", my_data.some_data);
-            }
-            close(client_fifo_fd);
-        }
+    // Sending pid to server
+    printf("Sending PID ...\n");
+    dprintf(server_fifo_fd, "C %u\n", clientPID);
+    printf("Success !\n");
+
+    // Open client fifo
+    printf("Oppening Client FIFO ...\n");
+    if ((client_fifo_fd = open(client_fifo, O_RDONLY)) == -1) {
+        goto Error;
     }
+    printf("Success !\n");
+
+    ConnectToServer(clientPID, server_fifo_fd, client_fifo_fd);
+
     close(server_fifo_fd);
     unlink(client_fifo);
+
+    if (client_fifo)
+        free(client_fifo);
+
     exit(EXIT_SUCCESS);
+
+Error:
+
+    if (client_fifo)
+        free(client_fifo);
+
+    exit(EXIT_FAILURE);
 }
 
