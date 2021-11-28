@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Sun Nov 28 00:41:48 2021
+# Make data base, printed on Sun Nov 28 12:52:21 2021
 
 # Variables
 
@@ -25,7 +25,7 @@ GTK_RC_FILES = /etc/gtk/gtkrc:/home/asayu/.gtkrc:/home/asayu/.config/gtkrc
 # environment
 CSF_EXCEPTION_PROMPT = 1
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-023f74e5-e247-4c0e-bc19-1c5705c6c063.sock
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-85ab3528-a8e0-412f-978d-b7803e9105fb.sock
 # environment
 CSF_XmlOcafResource = /usr/share/opencascade/resources/XmlOcafResource
 # environment
@@ -125,7 +125,7 @@ MAKEFILE_LIST := Makefile
 # environment
 VSCODE_VERBOSE_LOGGING = true
 # environment
-VSCODE_PID = 5931
+VSCODE_PID = 16761
 # environment
 XDG_SESSION_TYPE = x11
 # automatic
@@ -185,7 +185,7 @@ WINLDFLAGS = "-L /usr/x86_64-w64-mingw32/lib/ -lmingw32 -lz -llzm -lm -mwindows"
 # environment
 LC_TIME = fr_FR.UTF-8
 # environment
-INVOCATION_ID = 177d0bd6674945eb8160f71cbb044e77
+INVOCATION_ID = d0c843de4b134e41adad77bedf78b4d8
 # makefile (from 'Makefile', line 22)
 removeDuplicates = $(if $(1),$(firstword $(1)) $(call removeDuplicates,$(strip $(filter-out $(firstword $(1)),$(1)))),)
 # environment
@@ -227,7 +227,7 @@ XDG_VTNR = 1
 # makefile
 .DEFAULT_GOAL := multi
 # environment
-SYSTEMD_EXEC_PID = 1208
+SYSTEMD_EXEC_PID = 1073
 # environment
 CSF_TObjMessage = /usr/share/opencascade/resources/TObj
 # environment
@@ -245,9 +245,9 @@ KDE_SESSION_UID = 1000
 # makefile (from 'Makefile', line 51)
 WINLIBS = 
 # makefile (from 'Makefile', line 30)
-LDFLAGS = 
+LDFLAGS = -lncurses
 # environment
-MANAGERPID = 1137
+MANAGERPID = 1001
 # environment
 LC_MEASUREMENT = fr_FR.UTF-8
 # environment
@@ -263,7 +263,7 @@ CSF_DrawPluginDefaults = /usr/share/opencascade/resources/DrawResources
 # environment
 CSF_IGESDefaults = /usr/share/opencascade/resources/XSTEPResource
 # environment
-JOURNAL_STREAM = 8:20455
+JOURNAL_STREAM = 8:22317
 # makefile (from 'Makefile', line 54)
 CPUS = $(nproc)
 # environment
@@ -281,18 +281,14 @@ ELECTRON_RUN_AS_NODE = 1
 # environment
 DRAWHOME = /usr/share/opencascade/resources/DrawResources
 # environment
+ 
 VSCODE_IPC_HOOK = /run/user/1000/vscode-d14acff9-1.62.3-main.sock
 # environment
 XDG_SESSION_ID = 2
- 
 # environment
- 
 XCURSOR_SIZE = 24
- 
 # default
- 
 .RECIPEPREFIX := 
- 
 # automatic
 <F = $(notdir $<)
 # makefile (from 'Makefile', line 35)
@@ -328,16 +324,16 @@ LC_IDENTIFICATION = fr_FR.UTF-8
 
 # Directories
 
-# src/client.c (device 66306, inode 4595013): could not be opened.
+# src/client.c (device 66306, inode 4595046): could not be opened.
 # src (device 66306, inode 4595012): 3 files, no impossibilities.
-# build (device 66306, inode 4725423): 3 files, no impossibilities.
+# build (device 66306, inode 4724893): 3 files, no impossibilities.
 # . (device 66306, inode 4594988): 8 files, no impossibilities.
 # includes (device 66306, inode 4594992): 3 files, no impossibilities.
-# build/src (device 66306, inode 4725424): 3 files, no impossibilities.
-# build/src/client.o (device 66306, inode 4725425): could not be opened.
+# build/src (device 66306, inode 4724945): 3 files, no impossibilities.
+# build/src/client.o (device 66306, inode 4724948): could not be opened.
 # includes/client.h (device 66306, inode 4595011): could not be opened.
-# Client_VMS (device 66306, inode 4595022): could not be opened.
-# Makefile (device 66306, inode 4594991): could not be opened.
+# Client_VMS (device 66306, inode 4594991): could not be opened.
+# Makefile (device 66306, inode 4595013): could not be opened.
 
 # 20 files, no impossibilities in 10 directories.
 
@@ -354,14 +350,13 @@ build/%.o: %.c
 # Not a target:
 Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2021-11-22 16:05:15.111780574
+#  Last modified 2021-11-28 12:47:13.977041315
 #  File has been updated.
 #  Successfully updated.
 
 build/src/:
 #  Implicit rule search has not been done.
- 
-#  Last modified 2021-11-27 23:28:06.2320322
+#  Last modified 2021-11-28 12:49:45.012890408
 #  File has been updated.
 #  Successfully updated.
 #  recipe to execute (from 'Makefile', line 62):
@@ -385,7 +380,7 @@ windows:
 build/src/client.o: src/client.c
 #  Implicit rule search has been done.
 #  Implicit/static pattern stem: 'src/client'
-#  Last modified 2021-11-27 23:28:06.235365541
+#  Last modified 2021-11-28 12:49:45.016224245
 #  File has been updated.
 #  Successfully updated.
 #  recipe to execute (from 'Makefile', line 65):
@@ -420,7 +415,7 @@ rebuild: clean multi
 # Not a target:
 src/client.c:
 #  Implicit rule search has been done.
-#  Last modified 2021-11-27 23:28:03.275358145
+#  Last modified 2021-11-28 12:49:41.725717439
 #  File has been updated.
 #  Successfully updated.
 
@@ -433,7 +428,7 @@ multi:
 
 Client_VMS: build/src/client.o
 #  Implicit rule search has not been done.
-#  Last modified 2021-11-27 23:28:06.265365615
+#  Last modified 2021-11-28 12:49:45.046228778
 #  File has been updated.
 #  Successfully updated.
 #  recipe to execute (from 'Makefile', line 69):
@@ -454,6 +449,6 @@ Client_VMS: build/src/client.o
 # strcache performance: lookups = 64 / hit rate = 54%
 # hash-table stats:
 # Load=29/8192=0%, Rehash=0, Collisions=0/64=0%
-# Finished Make data base on Sun Nov 28 00:41:48 2021
+# Finished Make data base on Sun Nov 28 12:52:21 2021
 
  

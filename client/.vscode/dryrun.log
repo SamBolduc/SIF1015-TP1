@@ -3,14 +3,9 @@ make: Entering directory '/home/asayu/Documents/UQTR/SIF1015/SIF1015-TP1/client'
 make -j --no-print-directory all
  
 mkdir -p build/src/
- 
 echo "Compiling src/client.c"
- 
 gcc -c -Wall -std=c99 -pedantic-errors -g src/client.c  -I includes/  -o build/src/client.o
- 
 echo "Linking Client_VMS"
- 
-gcc -o Client_VMS build/src/client.o 
- 
+gcc -o Client_VMS build/src/client.o -lncurses
 make: Leaving directory '/home/asayu/Documents/UQTR/SIF1015/SIF1015-TP1/client'
  

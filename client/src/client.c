@@ -89,7 +89,7 @@ void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd, WI
         int middle_position = ((PARENT_X / 2) - 3) / 2 - 6;
         mvwprintw(w_tx, 0, middle_position, "Transmit [TX]");
         mvwprintw(w_rx, 0, middle_position, "Receive [RX]");
-        mvwprintw(w_tx, linesCounter++, 1, "Requested command (Press Enter to send): %s", commandBuffer);
+        mvwprintw(w_tx, linesCounter, 1, "Requested command (Press Enter to send): %s", commandBuffer);
         mvwprintw(w_rx, 1, 1, "Server response...");
         
         // refresh each window
@@ -97,13 +97,15 @@ void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd, WI
         wrefresh(w_rx);
         
         wgetstr(w_tx, commandBuffer);
-        dprintf(server_fifo_fd, "%s", commandBuffer);
+        if (commandBuffer[0] == 'q')
+            break;
+        dprintf(server_fifo_fd, "%u %s", clientPID, commandBuffer);
     }
 
 
 }
 int main() {
-    #pragma region ... set up initial windows
+    //set up initial windows
     initscr();
     curs_set(FALSE);
 
@@ -113,9 +115,8 @@ int main() {
     WINDOW *w_rx = newwin(PARENT_Y, (PARENT_X / 2) - 3, 0, (PARENT_X / 2) + 2);
 
     DrawCompleteWindows(w_tx, w_rx);
-    #pragma endregion
 
-    #pragma region ... set up initial connection
+    //set up initial connection
     pid_t clientPID;
     int server_fifo_fd, client_fifo_fd;
     char* client_fifo = NULL;
@@ -148,7 +149,7 @@ int main() {
     // Sending pid to server
     mvwprintw(w_tx, 3, 1, "Sending PID ...\n");
     DrawCompleteWindows(w_tx, w_rx);
-    dprintf(server_fifo_fd, "C %u\n", clientPID);
+    dprintf(server_fifo_fd, "%u\n", clientPID);
     mvwprintw(w_tx, 3, 40, "Success !\n");
     DrawCompleteWindows(w_tx, w_rx);
 
@@ -160,7 +161,6 @@ int main() {
     }
     mvwprintw(w_tx, 4, 40, "Success !\n");
     DrawCompleteWindows(w_tx, w_rx);
-    #pragma endregion
 
     ConnectToServer(clientPID, server_fifo_fd, client_fifo_fd, w_tx, w_rx);
 
