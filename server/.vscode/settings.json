@@ -2,5 +2,12 @@
     "files.associations": {
         "*.rh": "cpp",
         "linkedlist.h": "c"
-    }
+    },
+    "makefile.launchConfigurations": [
+        {
+            "cwd": "/home/asayu/Documents/UQTR/SIF1015/SIF1015-TP1/server",
+            "binaryPath": "/home/asayu/Documents/UQTR/SIF1015/SIF1015-TP1/server/Server_VMS",
+            "binaryArgs": []
+        }
+    ]
 }

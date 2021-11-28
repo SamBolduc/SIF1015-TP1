@@ -62,7 +62,10 @@ void FreeLinkedList(LinkedList** List){
 }
 
 void DeleteLinkedListNode(LinkedList** node){
-    LinkedList* nextNode = (*node)->next;
+    LinkedList* nextNode = NULL;
+    if (!node)
+        return;
+    nextNode = (*node)->next;
     free((*node));
     *node = nextNode;
 }

@@ -40,8 +40,8 @@ void addItem(ClientContext* client) {
 	
 	pthread_mutex_lock(&client->vmState); /* Lock head */
 	
-    AppendRefToLinkedList(&client->vms, newVM); /* Add the VM to the linked list */
-	pthread_create(&((VirtualMachine*)(client->vms->data))->vmProcess, NULL, &virtualMachine, ((VirtualMachine*)client->vms->data)); /* Create the VM in a new thread */
+    newVM = AppendRefToLinkedList(&client->vms, newVM)->data; /* Add the VM to the linked list */
+	pthread_create(&newVM->vmProcess, NULL, &virtualMachine, newVM); /* Create the VM in a new thread */
 	
     pthread_mutex_unlock(&client->vmState); /* Unlock head */
 }
@@ -128,7 +128,7 @@ int dispatchJob(ClientContext* client, int noVM, char* sourcefname) {
     
     if (!((VirtualMachine*)VM->data)->kill){
         dprintf(client->clientFifo, "Job %s dispatched to vm %d !\n", sourcefname, noVM);        
-        AppendToLinkedList(&((VirtualMachine*)VM->data)->binaryList, sourcefname, sizeof(char)*strlen(sourcefname));
+        AppendToLinkedList(&((VirtualMachine*)VM->data)->binaryList, sourcefname, sizeof(char)*(strlen(sourcefname) + 1));
     } else {
         dprintf(client->clientFifo, "Couldn't dispatch job %s ! VM %d already flagged for deletion !\n", sourcefname, noVM);
     }

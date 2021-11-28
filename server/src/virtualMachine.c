@@ -502,10 +502,14 @@ void* virtualMachine(void* args) {
         if (self->binaryList) {
             
             pthread_mutex_lock(self->consoleState);
-            dprintf(*self->console, "VM %d executing !\n", self->noVM);
+            dprintf(*self->console, "VM %d executing ! %s\n", self->noVM, (char*)self->binaryList->data);
             pthread_mutex_unlock(self->consoleState);
+            if (self->binaryList->data == NULL)
+                printf("WUT\n");
             executeFile(self, self->binaryList->data); /* Executing Current Job */
-
+            if (self->binaryList->data == NULL)
+                printf("DOUBLE WUT\n");
+            
             DeleteLinkedListNode(&self->binaryList);   /* Free completed Job */
         }
     }

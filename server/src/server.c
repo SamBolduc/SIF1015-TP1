@@ -84,14 +84,14 @@ void processClientsTransaction(ClientContext* client, char* querryBuffer) {
         case 'L':
             {
                 int nStart = atoi(strtok_r(NULL, "-", &querryPointer));
-                int nEnd = atoi(strtok_r(NULL, " \0", &querryPointer));
+                int nEnd = atoi(strtok_r(NULL, " ", &querryPointer));
                 listItems(client, nStart, nEnd);
             }
             break;
 
         case 'E':
             {
-                int noVM = atoi(strtok_r(NULL, " \0", &querryPointer));
+                int noVM = atoi(strtok_r(NULL, " ", &querryPointer));
                 removeItem(client, noVM);
             }
             break;
@@ -99,7 +99,8 @@ void processClientsTransaction(ClientContext* client, char* querryBuffer) {
         case 'X':
             {
                 int noVM = atoi(strtok_r(NULL, " ", &querryPointer));
-                char* fileName = strtok_r(NULL, " \0", &querryPointer);
+                char* fileName = strtok_r(NULL, " ", &querryPointer);
+                fileName[strlen(fileName)] = 0;
                 dispatchJob(client, noVM, fileName);
             }
             break;

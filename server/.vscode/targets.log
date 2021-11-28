@@ -1,0 +1,547 @@
+make all --print-data-base --no-builtin-variables --no-builtin-rules --question
+# GNU Make 4.3
+# Built for x86_64-pc-linux-gnu
+# Copyright (C) 1988-2020 Free Software Foundation, Inc.
+# License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+# This is free software: you are free to change and redistribute it.
+# There is NO WARRANTY, to the extent permitted by law.
+
+# Make data base, printed on Sun Nov 28 00:41:49 2021
+
+# Variables
+
+# makefile (from 'Makefile', line 44)
+OBJ = $(patsubst %,$(BUILD_DIR)/%,$(SRC:%.c=%.o))
+# environment
+GDK_BACKEND = x11
+# environment
+LC_ALL = C
+# environment
+NO_AT_BRIDGE = 1
+# makefile (from 'Makefile', line 41)
+SRC = $(call recursiveSearch,*.c)
+# environment
+GTK_RC_FILES = /etc/gtk/gtkrc:/home/asayu/.gtkrc:/home/asayu/.config/gtkrc
+# environment
+CSF_EXCEPTION_PROMPT = 1
+# environment
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-f78af865-0d6f-47b8-bad2-954546e5eb7b.sock
+# environment
+CSF_XmlOcafResource = /usr/share/opencascade/resources/XmlOcafResource
+# environment
+LC_NAME = fr_FR.UTF-8
+# environment
+LC_NUMERIC = fr_FR.UTF-8
+# environment
+VSCODE_CWD = /home/asayu/Documents/UQTR/SIF1015/SIF1015-TP1
+# makefile (from 'Makefile', line 49)
+LIBS = 
+# environment
+MMGT_CLEAR = 1
+# environment
+CSF_XCAFDefaults = /usr/share/opencascade/resources/StdResource
+# environment
+CSF_PluginDefaults = /usr/share/opencascade/resources/StdResource
+# environment
+CASROOT = /usr
+# environment
+LC_ADDRESS = fr_FR.UTF-8
+# default
+MAKE_COMMAND := make
+# environment
+GTK3_MODULES = xapp-gtk3-module
+# makefile (from 'Makefile', line 19)
+recursiveSearch = $(foreach file,$(wildcard $(2)*),$(filter $(subst *,%,$(1)),$(file)) $(call recursiveSearch,$(1),$(file)/))
+# automatic
+@D = $(patsubst %/,%,$(dir $@))
+# makefile (from 'Makefile', line 45)
+OBJ_DIR = $(call removeDuplicates, $(dir $(OBJ)))
+# environment
+VSCODE_HANDLES_UNCAUGHT_ERRORS = true
+# default
+.VARIABLES := 
+# makefile (from 'Makefile', line 26)
+WINCC = x86_64-w64-mingw32-gcc
+# environment
+PWD = /home/asayu/Documents/UQTR/SIF1015/SIF1015-TP1/server
+# automatic
+%D = $(patsubst %/,%,$(dir $%))
+# environment
+MAIL = /var/spool/mail/asayu
+# automatic
+^D = $(patsubst %/,%,$(dir $^))
+# environment
+VSCODE_LOG_STACK = false
+# automatic
+%F = $(notdir $%)
+# environment
+VSCODE_CODE_CACHE_PATH = /home/asayu/.config/VSCodium/CachedData/ccbaa2d27e38e5afa3e5c21c1c7bef4657064247
+# environment
+XDG_SESSION_PATH = /org/freedesktop/DisplayManager/Session1
+# environment
+CSF_ShadersDirectory = /usr/share/opencascade/resources/Shaders
+# environment
+LANG = C
+# environment
+XAUTHORITY = /home/asayu/.Xauthority
+# default
+.LOADED := 
+# default
+.INCLUDE_DIRS = /usr/include /usr/local/include /usr/include
+# makefile
+MAKEFLAGS = pqrR
+# makefile
+CURDIR := /home/asayu/Documents/UQTR/SIF1015/SIF1015-TP1/server
+# environment
+VSCODE_PIPE_LOGGING = true
+# environment
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = true
+# automatic
+*D = $(patsubst %/,%,$(dir $*))
+# environment
+PAM_KWALLET5_LOGIN = /run/user/1000/kwallet5.socket
+# environment
+MFLAGS = -pqrR
+# default
+.SHELLFLAGS := -c
+# environment
+CSF_MDTVTexturesDirectory = /usr/share/opencascade/resources/Textures
+# environment
+QT_LINUX_ACCESSIBILITY_ALWAYS_ON = 1
+# environment
+XDG_CONFIG_DIRS = /home/asayu/.config/kdedefaults:/etc/xdg
+# automatic
++D = $(patsubst %/,%,$(dir $+))
+# environment
+XCURSOR_THEME = breeze_cursors
+# environment
+XDG_SESSION_DESKTOP = KDE
+# environment
+VSCODE_CRASH_REPORTER_START_OPTIONS = {"companyName":"Microsoft","productName":"VSCodium","submitURL":"","uploadToServer":false}
+# makefile (from 'Makefile', line 1)
+MAKEFILE_LIST := Makefile
+# automatic
+@F = $(notdir $@)
+# environment
+VSCODE_VERBOSE_LOGGING = true
+# environment
+VSCODE_PID = 5931
+# environment
+XDG_SESSION_TYPE = x11
+# automatic
+?D = $(patsubst %/,%,$(dir $?))
+# environment
+CSF_XSMessage = /usr/share/opencascade/resources/XSMessage
+# makefile (from 'Makefile', line 48)
+INCLUDES = $(patsubst %, -I %, $(call removeDuplicates, $(dir $(call recursiveSearch,*.h))))
+# environment
+DRAWDEFAULT = /usr/share/opencascade/resources/DrawResources/DrawDefault
+# automatic
+*F = $(notdir $*)
+# environment
+CHROME_DESKTOP = codium-url-handler.desktop
+# environment
+CSF_SHMessage = /usr/share/opencascade/resources/SHMessage
+# environment
+DBUS_SESSION_BUS_ADDRESS = unix:path=/run/user/1000/bus
+# automatic
+<D = $(patsubst %/,%,$(dir $<))
+# environment
+VSCODE_NLS_CONFIG = {"locale":"en-us","availableLanguages":{},"_languagePackSupport":true}
+# environment
+BREAKPAD_DUMP_LOCATION = /home/asayu/.config/VSCodium/exthost Crash Reports
+# default
+MAKE_HOST := x86_64-pc-linux-gnu
+# makefile
+SHELL = /bin/sh
+# default
+MAKECMDGOALS := all
+# environment
+DOTNET_BUNDLE_EXTRACT_BASE_DIR = /home/asayu/.cache/dotnet_bundle_extract
+# environment
+SHLVL = 1
+# environment
+CSF_TObjDefaults = /usr/share/opencascade/resources/StdResource
+# environment
+MAKELEVEL := 0
+# default
+MAKE = $(MAKE_COMMAND)
+# environment
+PATH = /home/asayu/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/home/asayu/.dotnet/tools:/usr/lib/jvm/default/bin:/opt/microchip/xc16/v1.70/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl
+# default
+MAKEFILES := 
+# environment
+XC16_TOOLCHAIN_ROOT = /opt/microchip/xc16/v1.70
+# environment
+LC_MONETARY = fr_FR.UTF-8
+# environment
+CSF_OCCTResourcePath = /usr/share/opencascade/resources
+# environment
+MOTD_SHOWN = pam
+# automatic
+^F = $(notdir $^)
+# makefile (from 'Makefile', line 32)
+WINLDFLAGS = "-L /usr/x86_64-w64-mingw32/lib/ -lmingw32 -lz -llzm -lm -mwindows"
+# environment
+LC_TIME = fr_FR.UTF-8
+# environment
+INVOCATION_ID = 177d0bd6674945eb8160f71cbb044e77
+# makefile (from 'Makefile', line 22)
+removeDuplicates = $(if $(1),$(firstword $(1)) $(call removeDuplicates,$(strip $(filter-out $(firstword $(1)),$(1)))),)
+# environment
+VSCODE_LOG_NATIVE = false
+# environment
+CSF_StandardLiteDefaults = /usr/share/opencascade/resources/StdResource
+# environment
+CSF_STEPDefaults = /usr/share/opencascade/resources/XSTEPResource
+# environment
+LC_TELEPHONE = fr_FR.UTF-8
+# automatic
+?F = $(notdir $?)
+# environment
+KDE_APPLICATIONS_AS_SCOPE = 1
+# environment
+XDG_SEAT = seat0
+# environment
+XDG_CURRENT_DESKTOP = KDE
+# environment
+CSF_MIGRATION_TYPES = /usr/share/opencascade/resources/StdResource/MigrationSheet.txt
+# automatic
++F = $(notdir $+)
+# environment
+XDG_SEAT_PATH = /org/freedesktop/DisplayManager/Seat0
+# environment
+DESKTOP_SESSION = plasma
+# environment
+ORIGINAL_XDG_CURRENT_DESKTOP = KDE
+# 'override' directive
+GNUMAKEFLAGS := 
+# environment
+BROWSER = /usr/bin/firefox
+# environment
+LOGNAME = asayu
+# environment
+CSF_LANGUAGE = us
+# environment
+XDG_VTNR = 1
+# makefile
+.DEFAULT_GOAL := multi
+# environment
+SYSTEMD_EXEC_PID = 1208
+# environment
+CSF_TObjMessage = /usr/share/opencascade/resources/TObj
+# environment
+EDITOR = /usr/bin/nano
+# environment
+DISPLAY = :0
+# environment
+GTK_MODULES = canberra-gtk-module
+# environment
+USER = asayu
+# default
+MAKE_VERSION := 4.3
+# environment
+KDE_SESSION_UID = 1000
+# makefile (from 'Makefile', line 51)
+WINLIBS = 
+# makefile (from 'Makefile', line 30)
+LDFLAGS = -lpthread
+# environment
+MANAGERPID = 1137
+# environment
+LC_MEASUREMENT = fr_FR.UTF-8
+# environment
+_ = /usr/bin/make
+# environment
+LC_PAPER = fr_FR.UTF-8
+# environment
+XDG_RUNTIME_DIR = /run/user/1000
+# makefile (from 'Makefile', line 29)
+CFLAGS = -c -Wall -std=c99 -pedantic-errors -g
+# environment
+CSF_DrawPluginDefaults = /usr/share/opencascade/resources/DrawResources
+# environment
+CSF_IGESDefaults = /usr/share/opencascade/resources/XSTEPResource
+# environment
+JOURNAL_STREAM = 8:20455
+# makefile (from 'Makefile', line 54)
+CPUS = $(nproc)
+# environment
+XDG_SESSION_CLASS = user
+# environment
+VSCODE_AMD_ENTRYPOINT = vs/workbench/services/extensions/node/extensionHostProcess
+# makefile (from 'Makefile', line 38)
+BUILD_DIR = build
+# environment
+GTK2_RC_FILES = /etc/gtk-2.0/gtkrc:/home/asayu/.gtkrc-2.0:/home/asayu/.config/gtkrc-2.0
+# environment
+HOME = /home/asayu
+# environment
+ 
+ELECTRON_RUN_AS_NODE = 1
+# environment
+DRAWHOME = /usr/share/opencascade/resources/DrawResources
+# environment
+VSCODE_IPC_HOOK = /run/user/1000/vscode-d14acff9-1.62.3-main.sock
+# environment
+XDG_SESSION_ID = 2
+# environment
+XCURSOR_SIZE = 24
+# default
+.RECIPEPREFIX := 
+# automatic
+<F = $(notdir $<)
+# makefile (from 'Makefile', line 35)
+OUT = Server_VMS
+# default
+SUFFIXES := 
+# environment
+QT_AUTO_SCREEN_SCALE_FACTOR = 0
+# environment
+VSCODE_CLI = 1
+# environment
+ELECTRON_NO_ATTACH_CONSOLE = 1
+# environment
+CSF_StandardDefaults = /usr/share/opencascade/resources/StdResource
+# environment
+KDE_SESSION_VERSION = 5
+# default
+.FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell nocomment grouped-target extra-prereqs archives jobserver output-sync check-symlink guile load
+# makefile (from 'Makefile', line 25)
+CC = gcc
+# environment
+KDE_FULL_SESSION = true
+# environment
+DOTNET_ROOT = /usr/share/dotnet
+# environment
+LC_IDENTIFICATION = fr_FR.UTF-8
+# variable set hash-table stats:
+# Load=152/1024=15%, Rehash=0, Collisions=19/452=4%
+
+# Pattern-specific Variable Values
+
+# No pattern-specific variable values.
+
+# Directories
+
+# includes/fifoManager.h (device 66306, inode 4724545): could not be opened.
+# Mult-Numbers.olc3 (device 66306, inode 4724525): could not be opened.
+# trans1.txt (device 66306, inode 4724530): could not be opened.
+# src/client.c (device 66306, inode 4725415): could not be opened.
+# includes/server.h (device 66306, inode 4724546): could not be opened.
+# build/src/virtualMachine.o (device 66306, inode 4725417): could not be opened.
+# includes/virtualMachine.h (device 66306, inode 4724543): could not be opened.
+# src (device 66306, inode 4724109): 8 files, no impossibilities.
+# Sum-Numbers.olc3 (device 66306, inode 4724528): could not be opened.
+# src/linkedList.c (device 66306, inode 4724948): could not be opened.
+# trans2.txt (device 66306, inode 4724524): could not be opened.
+# build/src/linkedList.o (device 66306, inode 4724526): could not be opened.
+# build (device 66306, inode 4724482): 3 files, no impossibilities.
+# . (device 66306, inode 4723729): 13 files, no impossibilities.
+# includes (device 66306, inode 4724112): 7 files, no impossibilities.
+# src/virtualMachine.c (device 66306, inode 4724542): could not be opened.
+# build/src/main.o (device 66306, inode 4724539): could not be opened.
+# trans3.txt (device 66306, inode 4724529): could not be opened.
+# src/server.c (device 66306, inode 4724893): could not be opened.
+# includes/linkedList.h (device 66306, inode 4724945): could not be opened.
+# src/main.c (device 66306, inode 4724541): could not be opened.
+# build/src/server.o (device 66306, inode 4725416): could not be opened.
+# build/src (device 66306, inode 4724486): 8 files, no impossibilities.
+# build/src/client.o (device 66306, inode 4724540): could not be opened.
+# build/src/fifoManager.o (device 66306, inode 4724538): could not be opened.
+# includes/client.h (device 66306, inode 4725414): could not be opened.
+# Makefile (device 66306, inode 4724527): could not be opened.
+# Server_VMS (device 66306, inode 4725418): could not be opened.
+# src/fifoManager.c (device 66306, inode 4724544): could not be opened.
+
+# 39 files, no impossibilities in 29 directories.
+
+# Implicit Rules
+
+build/%.o: %.c
+#  recipe to execute (from 'Makefile', line 65):
+	@echo "Compiling $<"
+	@$(CC) $(CFLAGS) $< $(INCLUDES) $(LIBS) -o $@
+
+# 1 implicit rules, 0 (0.0%) terminal.
+# Files
+
+# Not a target:
+build/src/virtualMachine.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+Makefile:
+#  Implicit rule search has been done.
+#  Last modified 2021-11-22 16:05:15.111780574
+#  File has been updated.
+#  Successfully updated.
+
+build/src/:
+#  Implicit rule search has not been done.
+#  Last modified 2021-11-28 00:38:48.342137085
+#  File has been updated.
+#  Successfully updated.
+#  recipe to execute (from 'Makefile', line 62):
+	@mkdir -p $@
+
+clean:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 73):
+	@echo "Cleaning Build"
+	@rm -rf $(BUILD_DIR) $(OUT) $(OUT).exe
+
+windows:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 83):
+	@$(MAKE) --no-print-directory rebuild CC=$(WINCC) OUT=$(OUT).exe LIBS=$(WINLIBS) LDFLAGS+=$(WINLDFLAGS)
+
+build/src/linkedList.o: src/linkedList.c
+#  Implicit rule search has been done.
+#  Implicit/static pattern stem: 'src/linkedList'
+#  Last modified 2021-11-28 00:38:48.298803071
+#  File has been updated.
+#  Needs to be updated (-q is set).
+# automatic
+# @ := build/src/linkedList.o
+# automatic
+# * := src/linkedList
+# automatic
+# < := src/linkedList.c
+# automatic
+# + := src/linkedList.c
+# automatic
+# % := 
+# automatic
+# ^ := src/linkedList.c
+# automatic
+# ? := src/linkedList.c
+# automatic
+# | := 
+# variable set hash-table stats:
+# Load=8/32=25%, Rehash=0, Collisions=5/81=6%
+#  recipe to execute (from 'Makefile', line 65):
+	@echo "Compiling $<"
+	@$(CC) $(CFLAGS) $< $(INCLUDES) $(LIBS) -o $@
+
+build/src/client.o: src/client.c
+#  Implicit rule search has been done.
+#  Implicit/static pattern stem: 'src/client'
+#  Last modified 2021-11-28 00:38:48.332136928
+#  File has been updated.
+#  Successfully updated.
+#  recipe to execute (from 'Makefile', line 65):
+	@echo "Compiling $<"
+	@$(CC) $(CFLAGS) $< $(INCLUDES) $(LIBS) -o $@
+
+# Not a target:
+.DEFAULT:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+all: build/src/ Server_VMS
+#  Command line target.
+#  Implicit rule search has been done.
+#  File does not exist.
+#  File has been updated.
+#  Needs to be updated (-q is set).
+# variable set hash-table stats:
+# Load=0/32=0%, Rehash=0, Collisions=0/70=0%
+
+run:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 80):
+	./$(OUT)
+
+rebuild: clean multi
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+src/client.c:
+#  Implicit rule search has been done.
+#  Last modified 2021-11-28 00:31:37.995726738
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+src/linkedList.c:
+#  Implicit rule search has been done.
+#  Last modified 2021-11-28 00:41:02.967354699
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+build/src/main.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+multi:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 57):
+	@$(MAKE) -j$(CPUS) --no-print-directory all
+
+# Not a target:
+build/src/server.o:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+build/src/fifoManager.o: src/fifoManager.c
+#  Implicit rule search has been done.
+#  Implicit/static pattern stem: 'src/fifoManager'
+#  Last modified 2021-11-28 00:38:48.305469842
+#  File has been updated.
+#  Successfully updated.
+#  recipe to execute (from 'Makefile', line 65):
+	@echo "Compiling $<"
+	@$(CC) $(CFLAGS) $< $(INCLUDES) $(LIBS) -o $@
+
+Server_VMS: build/src/client.o build/src/fifoManager.o build/src/linkedList.o build/src/main.o build/src/server.o build/src/virtualMachine.o
+#  Implicit rule search has not been done.
+#  Last modified 2021-11-28 00:38:48.378804328
+#  File has been updated.
+#  Needs to be updated (-q is set).
+# variable set hash-table stats:
+# Load=0/32=0%, Rehash=0, Collisions=0/70=0%
+#  recipe to execute (from 'Makefile', line 69):
+	@echo "Linking $@"
+	@$(CC) -o $(OUT) $^ $(LDFLAGS)
+
+# Not a target:
+src/fifoManager.c:
+#  Implicit rule search has been done.
+#  Last modified 2021-11-27 21:48:42.564674131
+#  File has been updated.
+#  Successfully updated.
+
+# files hash-table stats:
+# Load=20/1024=2%, Rehash=0, Collisions=1/52=2%
+# VPATH Search Paths
+
+# No 'vpath' search paths.
+
+# No general ('VPATH' variable) search path.
+
+# strcache buffers: 1 (0) / strings = 64 / storage = 813 B / avg = 12 B
+# current buf: size = 8162 B / used = 813 B / count = 64 / avg = 12 B
+
+# strcache performance: lookups = 113 / hit rate = 43%
+# hash-table stats:
+# Load=64/8192=1%, Rehash=0, Collisions=0/113=0%
+# Finished Make data base on Sun Nov 28 00:41:49 2021
+
+ 
