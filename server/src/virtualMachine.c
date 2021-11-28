@@ -1,61 +1,95 @@
 /*
-  #########################################################
-  #
-  # Titre : 	Utilitaires CVS LINUX Automne 21
-  #				SIF-1015 - Système d'exploitation
-  #				Université du Québec à Trois-Rivières
-  #
-  # Auteur : 	Francois Meunier
-  #	Date :		Septembre 2021
-  #
-  # Langage : 	ANSI C on LINUX 
-  #
-  #######################################
+    Copyright (C) 2021 Killian RAIMBAUD [Asayu] (killian.rai@gmail.com)
+    Copyright (C) 2021 Francois Meunier
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; version 2 of the License.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-#define _POSIX_SOURCE
+
 #define _GNU_SOURCE
 
-#include "gestionListeChaineeVMS.h"
-#include "gestionVMS.h"
+#include "virtualMachine.h"
+#include "linkedList.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <signal.h>
 #include <linux/limits.h>
-#include <pthread.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <sys/select.h>
+#include <sys/termios.h>
+#include <string.h>
 
-#define cls() system("clear")
+#define VM_IMAGE_OFFSET 0x3000
 
-extern linkedList* threads;
+/* Registers */
+enum {
+    R_R0 = 0,
+    R_R1,
+    R_R2,
+    R_R3,
+    R_R4,
+    R_R5,
+    R_R6,
+    R_R7,
+    R_PC, /* program counter */
+    R_COND,
+    R_COUNT
+};
 
-extern linkedList* head;  /* Pointeur de tête de liste */
-extern linkedList* queue; /* Pointeur de queue de liste pour ajout rapide */
-extern int nbVM;          /* nombre de VM actives */
+/* Opcodes */
+enum {
+    OP_BR = 0, /* branch */
+    OP_ADD,    /* add  */
+    OP_LD,     /* load */
+    OP_ST,     /* store */
+    OP_JSR,    /* jump register */
+    OP_AND,    /* bitwise and */
+    OP_LDR,    /* load register */
+    OP_STR,    /* store register */
+    OP_RTI,    /* unused */
+    OP_NOT,    /* bitwise not */
+    OP_LDI,    /* load indirect */
+    OP_STI,    /* store indirect */
+    OP_JMP,    /* jump */
+    OP_RES,    /* reserved (unused) */
+    OP_LEA,    /* load effective address */
+    OP_TRAP    /* execute trap */
+};
 
-extern pthread_mutex_t headState;
-extern pthread_mutex_t consoleState;
+/* Condition Flags */
+enum {
+    FL_POS = 1 << 0, /* P */
+    FL_ZRO = 1 << 1, /* Z */
+    FL_NEG = 1 << 2 /* N */
+};
 
-/*
-  #######################################
-  #
-  # Affiche un message et quitte le programme
-  #
-*/
-void error(const int exitcode, const char* format, ...) {
-    va_list args;
+/* Memory Mapped Registers */
+enum {
+    MR_KBSR = 0xFE00, /* keyboard status */
+    MR_KBDR = 0xFE02  /* keyboard data */
+};
 
-    pthread_mutex_lock(&consoleState);
+/* TRAP Codes */
+enum {
+    TRAP_GETC  = 0x20,  /* get character from keyboard, not echoed onto the terminal */
+    TRAP_OUT   = 0x21,  /* output a character */
+    TRAP_PUTS  = 0x22,  /* output a word string */
+    TRAP_IN    = 0x23,  /* get character from keyboard, echoed onto the terminal */
+    TRAP_PUTSP = 0x24,  /* output a byte string */
+    TRAP_HALT  = 0x25   /* halt the program */
+};
 
-    va_start(args, format);
-
-	printf("\n-------------------------\n");
-    vprintf(format, args);
-
-    va_end(args);
-
-    pthread_mutex_unlock(&consoleState);
-	exit(exitcode);
-}
-	
 /* Sign Extend */
 uint16_t sign_extend(uint16_t x, int bit_count) {
     if ((x >> (bit_count - 1)) & 1) {
@@ -160,9 +194,9 @@ void restore_input_buffering() {
 /* Handle Interrupt */
 void handle_interrupt(int signal) {
     restore_input_buffering();
-    pthread_mutex_lock(&consoleState);
+    //pthread_mutex_lock(&consoleState);
     printf("\n");
-    pthread_mutex_unlock(&consoleState);
+    //pthread_mutex_unlock(&consoleState);
     exit(-2);
 }
 
@@ -172,7 +206,7 @@ void handle_interrupt(int signal) {
   # Execute le fichier de code .obj 
   #
 */
-int executeFile(infoVM* VM, char* sourcefname){
+int executeFile(VirtualMachine* VM, char* sourcefname){
 /* Memory Storage */
 /* 65536 locations */
 	uint16_t *memory;
@@ -186,8 +220,11 @@ int executeFile(infoVM* VM, char* sourcefname){
 
 	memory = VM->ptrDebutVM;
     if (!read_image_file(memory, sourcefname, &origin)) {
-        printf("VM %d : Failed to load image: %s\n", VM->noVM, sourcefname);
-        return(0);
+        pthread_mutex_lock(VM->consoleState);
+        dprintf(*VM->console, "VM %d : Failed to load image: %s\n", VM->noVM, sourcefname);
+        pthread_mutex_unlock(VM->consoleState);
+        VM->busy = false;
+        return 0;
     }
     
     /* Setup */
@@ -224,7 +261,9 @@ int executeFile(infoVM* VM, char* sourcefname){
                     } else {
                         uint16_t r2 = instr & 0x7;
                         reg[r0] = reg[r1] + reg[r2];
-                        printf("\nVM %d : add reg[r0] (sum) = %d", VM->noVM, reg[r0]);
+                        pthread_mutex_lock(VM->consoleState);
+                        dprintf(*VM->console, "\nVM %d : add reg[r0] (sum) = %d", VM->noVM, reg[r0]);
+                        pthread_mutex_unlock(VM->consoleState);
                         /* printf("\t add reg[r1] (sum avant) = %d", reg[r1]); */
                         /* printf("\t add reg[r2] (valeur ajoutee) = %d", reg[r2]); */
                     }
@@ -401,7 +440,9 @@ int executeFile(infoVM* VM, char* sourcefname){
                     case TRAP_IN:
                         /* TRAP IN */
                         {
-                            printf("VM %d : Enter a character: ", VM->noVM);
+                            pthread_mutex_lock(VM->consoleState);
+                            dprintf(*VM->console, "VM %d : Enter a character: ", VM->noVM);
+                            pthread_mutex_unlock(VM->consoleState);
                             c = getchar();
                             putc(c, stdout);
                             reg[R_R0] = (uint16_t)c;
@@ -428,7 +469,9 @@ int executeFile(infoVM* VM, char* sourcefname){
                         break;
                     case TRAP_HALT:
                         /* TRAP HALT */
-                        puts("\n HALT");
+                        pthread_mutex_lock(VM->consoleState);
+                        dprintf(*VM->console, "\n HALT\n");
+                        pthread_mutex_unlock(VM->consoleState);
                         fflush(stdout);
                         running = 0;
 
@@ -453,156 +496,25 @@ int executeFile(infoVM* VM, char* sourcefname){
     return(1);
 }
 
-int dispatchJob(int noVM, char* sourcefname){
-    linkedList *VM = findItem(noVM);
-    
-    pthread_mutex_lock(&consoleState);
-    if (!((infoVM*)VM->data)->kill){
-        printf("Job %s dispatched to vm %d !\n", sourcefname, noVM);        
-        appendToLinkedList(&((infoVM*)VM->data)->binaryList, sourcefname, sizeof(char)*strlen(sourcefname));
-    } else {
-        printf("Couldn't dispatch job %s ! VM %d already flagged for deletion !\n", sourcefname, noVM);
-    }
-
-    pthread_mutex_unlock(&consoleState);
-
-    return(1);
-}
-
 void* virtualMachine(void* args) {
-    infoVM* self = (infoVM*)args;
+    VirtualMachine* self = args;
 
     self->busy = false;
     while (!self->kill || self->binaryList) {
         if (self->binaryList) {
             
-            pthread_mutex_lock(&consoleState);
-            printf("VM %d executing !\n", self->noVM);
+            pthread_mutex_lock(self->consoleState);
+            dprintf(*self->console, "VM %d executing ! %s\n", self->noVM, (char*)self->binaryList->data);
+            pthread_mutex_unlock(self->consoleState);
+            if (self->binaryList->data == NULL)
+                printf("WUT\n");
             executeFile(self, self->binaryList->data); /* Executing Current Job */
-            pthread_mutex_unlock(&consoleState);
-
-            deleteLinkedListNode(&self->binaryList);   /* Free completed Job */
+            if (self->binaryList->data == NULL)
+                printf("DOUBLE WUT\n");
+            
+            DeleteLinkedListNode(&self->binaryList);   /* Free completed Job */
         }
     }
 
     return NULL;
 }
-
-/*
-  #######################################
-  #
-  # fonction utilisée pour le traitement  des transactions
-  # ENTREE: Nom de fichier de transactions 
-  # SORTIE: 
-*/
-#define CLIENT_FIFO_NAME "/tmp/cli_%u_fifo"
-void* readTrans(char* nomFichier) {
-    int f, client_fifo_fd;
-    ssize_t bufferEnd = 0;
-	char buffer[100];
-	char *tok, *sp;
-
-
-    if (!nomFichier)
-        error(-1, "[%s/%u] No fifo provided !\n", __FILE__, __LINE__);
-
-    // Test if the fifo exists
-    if (access(nomFichier, F_OK) == -1) {
-        if (mkfifo(nomFichier, 0777) == -1) {
-            error(-1, "[%s/%u] Couldn't create fifo (%s)\n", __FILE__, __LINE__, nomFichier);
-        }
-    }
-
-    printf("Attempting to open fifo ... \n");
-	/* Ouverture du fichier en mode "r" (equiv. "rt") : [r]ead [t]ext */
-	if (!(f = open(nomFichier, O_RDONLY)))
-        error(2, "readTrans [%s/%u]: Erreur lors de l'ouverture du fichier.\n", __FILE__, __LINE__);
-
-    printf("Success\n");
-    
-    printf("Listening for transactions ...\n");
-
-	/* Pour chacune des lignes lues */
-	while((bufferEnd = read(f, buffer, 100)) != -1) {
-        buffer[bufferEnd-1] = '\0';
-        printf("Transaction received [%s]\n", buffer);
-		/* Extraction du type de transaction */
-		tok = strtok_r(buffer, " ", &sp);
-
-		/* Branchement selon le type de transaction */
-		switch(tok[0]) {
-            case 'C':
-            case 'c':
-                {
-                    pid_t clientPID = atoi(strtok_r(NULL, " ", &sp));
-                    char* clientFIFOPath = NULL;
-                    printf("Connecting to client %u ...\n", clientPID);
-                    asprintf(&clientFIFOPath, CLIENT_FIFO_NAME, clientPID);
-                    if (!(client_fifo_fd = open(clientFIFOPath, O_WRONLY))){
-                        free(clientFIFOPath);
-                        error(2, "readTrans [%s/%u]: Erreur lors de l'ouverture du fichier.\n", __FILE__, __LINE__);
-                    }
-                    free(clientFIFOPath);
-                    printf("Success !\n");
-                }
-                break;
-
-			case 'A':
-			case 'a':
-				/* Appel de la fonction associée */
-				addItem(); /* Ajout de une VM */
-				break;
-			case 'E':
-			case 'e':
-                {
-                    /* Extraction du paramètre */
-                    int noVM = atoi(strtok_r(NULL, " ", &sp));
-                    /* Appel de la fonction associée */
-                    removeItem(noVM); /* Eliminer une VM */
-                    break;
-				}
-			case 'L':
-			case 'l':
-                {
-				    /* Extraction des paramètres */
-                    int nstart = atoi(strtok_r(NULL, "-", &sp));
-                    int nend = atoi(strtok_r(NULL, " ", &sp));
-                    /* Appel de la fonction associée */
-                    listItems(nstart, nend); /* Lister les VM */
-                    break;
-				}
-			case 'X':
-			case 'x':
-                {
-                    /* Appel de la fonction associée */
-                    int noVM = atoi(strtok_r(NULL, " ", &sp));
-                    char *nomfich = strtok_r(NULL, "\n", &sp);
-                    dispatchJob(noVM, nomfich); /* Executer le code binaire du fichier nomFich sur la VM noVM */
-                    break;
-				}
-		}
-	}
-
-    pthread_mutex_lock(&headState); /* Lock head */
-    queue = head;
-    while (queue){ /* Flags all VMS for deletion */
-        ((infoVM*)queue->data)->kill = true;
-        queue = queue->next;
-    }
-
-    while (head){
-        printf("Waiting for vm %d\n", ((infoVM*)head->data)->noVM);
-        pthread_join(((infoVM*)head->data)->vmProcess, NULL);
-        printf("VM %d done\n", ((infoVM*)head->data)->noVM);
-        deleteLinkedListNode(&head); 
-    }
-    queue = head = NULL;
-    pthread_mutex_unlock(&headState); /* Unlock head */
-
-    /* Fermeture du fichier */
-	close(f);
-	
-    return NULL;
-}
-
-

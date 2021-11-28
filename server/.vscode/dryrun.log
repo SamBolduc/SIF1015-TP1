@@ -1,0 +1,15 @@
+make rebuild --dry-run --keep-going --print-directory
+make: Entering directory '/home/asayu/Documents/UQTR/SIF1015/SIF1015-TP1/server'
+echo "Cleaning Build"
+rm -rf build Server_VMS Server_VMS.exe
+make -j --no-print-directory all
+ 
+echo "Compiling src/linkedList.c"
+ 
+gcc -c -Wall -std=c99 -pedantic-errors -g src/linkedList.c  -I includes/  -o build/src/linkedList.o
+ 
+echo "Linking Server_VMS"
+gcc -o Server_VMS build/src/client.o build/src/fifoManager.o build/src/linkedList.o build/src/main.o build/src/server.o build/src/virtualMachine.o -lpthread
+ 
+make: Leaving directory '/home/asayu/Documents/UQTR/SIF1015/SIF1015-TP1/server'
+ 

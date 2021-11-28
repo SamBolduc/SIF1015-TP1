@@ -36,15 +36,16 @@ void DrawBorders(WINDOW *screen) {
     
     // Sides
     for (i = 1; i < (y - 1); i++) {
-    mvwprintw(screen, i, 0, "|");
-    mvwprintw(screen, i, x - 1, "|");
+        mvwprintw(screen, i, 0, "|");
+        mvwprintw(screen, i, x - 1, "|");
     }
     
     // Top and bottom
     for (i = 1; i < (x - 1); i++) {
-    mvwprintw(screen, 0, i, "-");
-    mvwprintw(screen, y - 1, i, "-");
+        mvwprintw(screen, 0, i, "-");
+        mvwprintw(screen, y - 1, i, "-");
     }
+
 }
 
 void DrawCompleteWindows(WINDOW *w1, WINDOW *w2){
