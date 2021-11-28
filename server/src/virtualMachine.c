@@ -469,7 +469,9 @@ int executeFile(VirtualMachine* VM, char* sourcefname){
                         break;
                     case TRAP_HALT:
                         /* TRAP HALT */
-                        puts("\n HALT");
+                        pthread_mutex_lock(VM->consoleState);
+                        dprintf(*VM->console, "\n HALT\n");
+                        pthread_mutex_unlock(VM->consoleState);
                         fflush(stdout);
                         running = 0;
 
