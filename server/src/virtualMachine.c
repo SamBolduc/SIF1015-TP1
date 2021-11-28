@@ -223,7 +223,8 @@ int executeFile(VirtualMachine* VM, char* sourcefname){
         pthread_mutex_lock(VM->consoleState);
         dprintf(*VM->console, "VM %d : Failed to load image: %s\n", VM->noVM, sourcefname);
         pthread_mutex_unlock(VM->consoleState);
-        return(0);
+        VM->busy = false;
+        return 0;
     }
     
     /* Setup */
