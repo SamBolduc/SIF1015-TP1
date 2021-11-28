@@ -29,6 +29,8 @@
         fifoFileDescriptor clientFifo;
         unsigned int nbVM;
         VMList* vms;
+        pthread_mutex_t vmState;
+        pthread_mutex_t fifoState;
     } ClientContext;
 
     void addItem(ClientContext* client);

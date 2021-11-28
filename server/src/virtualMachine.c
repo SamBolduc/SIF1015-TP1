@@ -492,12 +492,12 @@ void* virtualMachine(void* args) {
     while (!self->kill || self->binaryList) {
         if (self->binaryList) {
             
-            //pthread_mutex_lock(&consoleState);
+            pthread_mutex_lock(self->consoleState);
             
             printf("VM %d executing !\n", self->noVM);
             executeFile(self, self->binaryList->data); /* Executing Current Job */
             
-            //pthread_mutex_unlock(&consoleState);
+            pthread_mutex_unlock(self->consoleState);
 
             DeleteLinkedListNode(&self->binaryList);   /* Free completed Job */
         }

@@ -35,13 +35,15 @@ void addItem(ClientContext* client) {
 	/* Affectation des valeurs des champs */
 	newVM->noVM = ++client->nbVM;
 	newVM->ptrDebutVM = (unsigned short*)malloc(sizeof(unsigned short)*VM_SEGMENT_SIZE);
+    newVM->consoleState = &client->fifoState;
+    newVM->console = &client->clientFifo;
 	
-	//pthread_mutex_lock(&headState); /* Lock head */
+	pthread_mutex_lock(&client->vmState); /* Lock head */
 	
     AppendRefToLinkedList(&client->vms, newVM); /* Add the VM to the linked list */
 	pthread_create(&((VirtualMachine*)(client->vms->data))->vmProcess, NULL, &virtualMachine, ((VirtualMachine*)client->vms->data)); /* Create the VM in a new thread */
 	
-    //pthread_mutex_unlock(&headState); /* Unlock head */
+    pthread_mutex_unlock(&client->vmState); /* Unlock head */
 }
 
 VMList* findItem(ClientContext* client, const unsigned int noVM) {
@@ -94,12 +96,13 @@ void listItems(ClientContext* client, const int start, const int end) {
     VirtualMachine* currentVM = NULL;
     int i;
 
-    if (!client)
+    if (!client) {
         return;
+    }
 
 	/* Affichage des entêtes de colonnes */
-	//pthread_mutex_lock(&headState); /* Lock head */
-	//pthread_mutex_lock(&consoleState); /* Lock console */
+	pthread_mutex_lock(&client->vmState); /* Lock head */
+	pthread_mutex_lock(&client->fifoState); /* Lock console */
 	
     printf("noVM    Busy?    Adresse Debut VM        kill ?              \n");
 	printf("=============================================================\n");
@@ -114,14 +117,14 @@ void listItems(ClientContext* client, const int start, const int end) {
 	/* Affichage des pieds de colonnes */
 	printf("=============================================================\n\n");
 	
-    //pthread_mutex_unlock(&consoleState); /* Unlock console */
-	//pthread_mutex_unlock(&headState); /* Unlock head */
+    pthread_mutex_unlock(&client->fifoState); /* Unlock console */
+	pthread_mutex_unlock(&client->vmState); /* Unlock head */
 }
 
 int dispatchJob(ClientContext* client, int noVM, char* sourcefname) {
     LinkedList *VM = findItem(client, noVM);
     
-    //pthread_mutex_lock(&consoleState);
+    pthread_mutex_lock(&client->fifoState);
     
     if (!((VirtualMachine*)VM->data)->kill){
         printf("Job %s dispatched to vm %d !\n", sourcefname, noVM);        
@@ -130,7 +133,7 @@ int dispatchJob(ClientContext* client, int noVM, char* sourcefname) {
         printf("Couldn't dispatch job %s ! VM %d already flagged for deletion !\n", sourcefname, noVM);
     }
 
-    //pthread_mutex_unlock(&consoleState);
+    pthread_mutex_unlock(&client->fifoState);
 
     return(1);
 }

@@ -55,6 +55,10 @@ ClientContext* addClient(serverObject* server, __pid_t clientPID) {
         return NULL;
     }
     free(clientFifoPath);
+    if (pthread_mutex_init(&newClient->vmState, NULL) || pthread_mutex_init(&newClient->fifoState, NULL)) {
+        printf("Error: Couldn't init client mutexes\n");
+        return NULL;
+    }
     printf("New client [%d] connected !\n", clientPID);
     return (ClientContext*)AppendRefToLinkedList(&server->clients, newClient)->data;
 }
