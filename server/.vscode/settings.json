@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.rh": "cpp",
+        "linkedlist.h": "c"
+    }
+}

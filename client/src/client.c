@@ -23,7 +23,7 @@ void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd) {
 
     while (true) { // Main loop
         fgets(commandBuffer, maxCommandLength, stdin);
-        dprintf(server_fifo_fd, "%s", commandBuffer);
+        dprintf(server_fifo_fd, "%d %s", clientPID, commandBuffer);
     }
 }
 
@@ -54,7 +54,7 @@ int main() {
 
     // Sending pid to server
     printf("Sending PID ...\n");
-    dprintf(server_fifo_fd, "C %u\n", clientPID);
+    dprintf(server_fifo_fd, "%u\n", clientPID);
     printf("Success !\n");
 
     // Open client fifo
