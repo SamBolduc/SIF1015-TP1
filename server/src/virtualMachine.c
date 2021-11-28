@@ -16,6 +16,8 @@
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#define _GNU_SOURCE
+
 #include "virtualMachine.h"
 #include "linkedList.h"
 
@@ -218,7 +220,9 @@ int executeFile(VirtualMachine* VM, char* sourcefname){
 
 	memory = VM->ptrDebutVM;
     if (!read_image_file(memory, sourcefname, &origin)) {
-        printf("VM %d : Failed to load image: %s\n", VM->noVM, sourcefname);
+        pthread_mutex_lock(VM->consoleState);
+        dprintf(*VM->console, "VM %d : Failed to load image: %s\n", VM->noVM, sourcefname);
+        pthread_mutex_unlock(VM->consoleState);
         return(0);
     }
     
@@ -256,7 +260,9 @@ int executeFile(VirtualMachine* VM, char* sourcefname){
                     } else {
                         uint16_t r2 = instr & 0x7;
                         reg[r0] = reg[r1] + reg[r2];
-                        printf("\nVM %d : add reg[r0] (sum) = %d", VM->noVM, reg[r0]);
+                        pthread_mutex_lock(VM->consoleState);
+                        dprintf(*VM->console, "\nVM %d : add reg[r0] (sum) = %d", VM->noVM, reg[r0]);
+                        pthread_mutex_unlock(VM->consoleState);
                         /* printf("\t add reg[r1] (sum avant) = %d", reg[r1]); */
                         /* printf("\t add reg[r2] (valeur ajoutee) = %d", reg[r2]); */
                     }
@@ -433,7 +439,9 @@ int executeFile(VirtualMachine* VM, char* sourcefname){
                     case TRAP_IN:
                         /* TRAP IN */
                         {
-                            printf("VM %d : Enter a character: ", VM->noVM);
+                            pthread_mutex_lock(VM->consoleState);
+                            dprintf(*VM->console, "VM %d : Enter a character: ", VM->noVM);
+                            pthread_mutex_unlock(VM->consoleState);
                             c = getchar();
                             putc(c, stdout);
                             reg[R_R0] = (uint16_t)c;
@@ -493,11 +501,9 @@ void* virtualMachine(void* args) {
         if (self->binaryList) {
             
             pthread_mutex_lock(self->consoleState);
-            
-            printf("VM %d executing !\n", self->noVM);
-            executeFile(self, self->binaryList->data); /* Executing Current Job */
-            
+            dprintf(*self->console, "VM %d executing !\n", self->noVM);
             pthread_mutex_unlock(self->consoleState);
+            executeFile(self, self->binaryList->data); /* Executing Current Job */
 
             DeleteLinkedListNode(&self->binaryList);   /* Free completed Job */
         }

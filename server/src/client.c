@@ -15,7 +15,7 @@
     with this program; if not, write to the Free Software Foundation, Inc.,
     51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
-
+#define _GNU_SOURCE
 #include "client.h"
 #include "virtualMachine.h"
 #include <stdlib.h>
@@ -104,18 +104,18 @@ void listItems(ClientContext* client, const int start, const int end) {
 	pthread_mutex_lock(&client->vmState); /* Lock head */
 	pthread_mutex_lock(&client->fifoState); /* Lock console */
 	
-    printf("noVM    Busy?    Adresse Debut VM        kill ?              \n");
-	printf("=============================================================\n");
+    dprintf(client->clientFifo, "noVM    Busy?    Adresse Debut VM        kill ?              \n");
+	dprintf(client->clientFifo, "=============================================================\n");
 	list = client->vms; /* premier element */
 	for (i = start; (i <= end) && list; i++) {
         currentVM = (VirtualMachine*)list->data;
-		printf("%d \t %d \t %p \t %s\n", currentVM->noVM, currentVM->busy, (void*)currentVM->ptrDebutVM, currentVM->kill ? "flagged for deletion" : "alive");
+		dprintf(client->clientFifo, "%d \t %d \t %p \t %s\n", currentVM->noVM, currentVM->busy, (void*)currentVM->ptrDebutVM, currentVM->kill ? "flagged for deletion" : "alive");
 		
 		list = list->next;
 	}
 
 	/* Affichage des pieds de colonnes */
-	printf("=============================================================\n\n");
+	dprintf(client->clientFifo, "=============================================================\n\n");
 	
     pthread_mutex_unlock(&client->fifoState); /* Unlock console */
 	pthread_mutex_unlock(&client->vmState); /* Unlock head */
@@ -127,10 +127,10 @@ int dispatchJob(ClientContext* client, int noVM, char* sourcefname) {
     pthread_mutex_lock(&client->fifoState);
     
     if (!((VirtualMachine*)VM->data)->kill){
-        printf("Job %s dispatched to vm %d !\n", sourcefname, noVM);        
+        dprintf(client->clientFifo, "Job %s dispatched to vm %d !\n", sourcefname, noVM);        
         AppendToLinkedList(&((VirtualMachine*)VM->data)->binaryList, sourcefname, sizeof(char)*strlen(sourcefname));
     } else {
-        printf("Couldn't dispatch job %s ! VM %d already flagged for deletion !\n", sourcefname, noVM);
+        dprintf(client->clientFifo, "Couldn't dispatch job %s ! VM %d already flagged for deletion !\n", sourcefname, noVM);
     }
 
     pthread_mutex_unlock(&client->fifoState);

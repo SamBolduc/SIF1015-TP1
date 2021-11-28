@@ -14,17 +14,27 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <stdbool.h>
+#include <pthread.h>
 
 void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd) {
     const unsigned int maxCommandLength = 100;
     char commandBuffer[maxCommandLength];
+    char charBuffer = '\0';
 
     printf("Connecting to server\n");
 
-    while (true) { // Main loop
-        fgets(commandBuffer, maxCommandLength, stdin);
-        dprintf(server_fifo_fd, "%d %s", clientPID, commandBuffer);
+    if (!fork()){
+        while (true) {
+            if (read(client_fifo_fd, &charBuffer, 1) != EOF)
+                putc(charBuffer, stdout);
+        }
+    } else {
+        while (true) { // Main loop
+            fgets(commandBuffer, maxCommandLength, stdin);
+            dprintf(server_fifo_fd, "%d %s", clientPID, commandBuffer);
+        }
     }
+
 }
 
 int main() {
@@ -62,6 +72,7 @@ int main() {
     if ((client_fifo_fd = open(client_fifo, O_RDONLY)) == -1) {
         goto Error;
     }
+    fcntl(client_fifo_fd, F_SETFL, fcntl(client_fifo_fd, F_GETFL, 0) | O_NONBLOCK);
     printf("Success !\n");
 
     ConnectToServer(clientPID, server_fifo_fd, client_fifo_fd);
