@@ -61,6 +61,13 @@ void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd, WI
     const unsigned int maxCommandLength = 100;
     char commandBuffer[maxCommandLength];
 
+
+
+    char responseBuffer[maxCommandLength];
+
+
+
+
     mvwprintw(w_tx, 5, 1, "Connecting to server\n");
     DrawCompleteWindows(w_tx, w_rx);
 
@@ -87,12 +94,10 @@ void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd, WI
         }
         
         // Draw to our windows
-        int middle_position = ((PARENT_X / 2) - 3) / 2 - 6;
-        mvwprintw(w_tx, 0, middle_position, "Transmit [TX]");
-        mvwprintw(w_rx, 0, middle_position, "Receive [RX]");
+        DrawCompleteWindows(w_tx, w_rx);
         mvwprintw(w_tx, tx_linesCounter++, 1, "Requested command (Press Enter to send): %s", commandBuffer);
         mvwprintw(w_rx, rx_linesCounter++, 1, "Server response...");
-        
+
         // refresh each window
         wrefresh(w_tx);
         wrefresh(w_rx);
@@ -100,7 +105,14 @@ void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd, WI
         wgetstr(w_tx, commandBuffer);
         if (commandBuffer[0] == 'q')
             break;
+        // Print to FIFO
         dprintf(server_fifo_fd, "%u %s", clientPID, commandBuffer);
+
+        // Read from FIFO
+        read(client_fifo_fd, responseBuffer, sizeof(responseBuffer));
+
+        // Print the read message
+        mvwprintw(w_rx, rx_linesCounter++, 1, "%s\n", responseBuffer);
     }
 
 

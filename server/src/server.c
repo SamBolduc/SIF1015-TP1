@@ -106,6 +106,7 @@ void processClientsTransaction(ClientContext* client, char* querryBuffer) {
             break;
 
         default: // Ignores malformed querries
+	        dprintf(client->clientFifo, "Unrecognized query\n");
             break;
     }
 }
