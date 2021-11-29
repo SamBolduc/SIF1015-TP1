@@ -87,6 +87,7 @@ void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd, WI
     int commandCounter = 1;
     while(true) { // Main loop
         memset(commandBuffer, 0, sizeof(commandBuffer));
+        memset(responseBuffer, 0, sizeof(responseBuffer));
         
         // Draw to our windows
         DrawCompleteWindows(w_tx, w_rx);
@@ -97,10 +98,13 @@ void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd, WI
         wrefresh(w_rx);
         
         wgetstr(w_tx, commandBuffer);
-        if (commandBuffer[0] == 'q')
-            break;
         // Print to FIFO
         dprintf(server_fifo_fd, "%u %s", clientPID, commandBuffer);
+        if (commandBuffer[0] == 'q') {
+            mvwprintw(stdscr, 0, 0, "EXITING NOW");
+            wrefresh(stdscr);
+            break;
+        }
 
         // Read from FIFO
         read(client_fifo_fd, responseBuffer, sizeof(responseBuffer));

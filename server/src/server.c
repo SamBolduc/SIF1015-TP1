@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <ctype.h>
 
 static const serverObject emptyServer;
 
@@ -59,7 +60,7 @@ ClientContext* addClient(serverObject* server, __pid_t clientPID) {
         printf("Error: Couldn't init client mutexes\n");
         return NULL;
     }
-    printf("New client [%d] connected !\n", clientPID);
+    printf("New client [%d] CONNECTED !\n", clientPID);
     return (ClientContext*)AppendRefToLinkedList(&server->clients, newClient)->data;
 }
 
@@ -71,12 +72,12 @@ void processClientsTransaction(ClientContext* client, char* queryBuffer) {
         return;
 
     if (queryBuffer)
-        printf("query from [%d] >%s<\n", client->clientPID, queryBuffer);
+        printf("Query from [%d] >%s<\n", client->clientPID, queryBuffer);
     query = strtok_r(queryBuffer, " ", &queryPointer);
         
     if (!query)
         return;
-    switch (query[0]) {
+    switch (toupper(query[0])) {
         case 'A':
             addItem(client);
             break;
@@ -102,6 +103,13 @@ void processClientsTransaction(ClientContext* client, char* queryBuffer) {
                 char* fileName = strtok_r(NULL, " ", &queryPointer);
                 fileName[strlen(fileName)] = 0;
                 dispatchJob(client, noVM, fileName);
+            }
+            break;
+
+        case 'Q':
+            {
+                // TODO: When client quits, remove all client's data on the server side(here)
+                printf("Client [%d] DISCONNECTED !\n", client->clientPID);
             }
             break;
 
