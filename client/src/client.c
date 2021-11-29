@@ -18,6 +18,22 @@ int PARENT_Y;
 #include <stdbool.h>
 #include <ncurses.h>
 
+void ResizeWindows(WINDOW *w_tx, WINDOW *w_rx) {
+    int new_y, new_x;
+    getmaxyx(stdscr, new_y, new_x);
+    if (new_y != PARENT_Y || new_x != PARENT_X) {
+        PARENT_X = new_x;
+        PARENT_Y = new_y;
+        
+        wresize(w_tx, new_y, new_x);
+        wresize(w_rx, new_y, new_x/2);
+        
+        wclear(stdscr);
+        wclear(w_tx);
+        wclear(w_rx);
+    }
+}
+
 void DrawWindowTitle(WINDOW *win, char* title) {
     int middle_position = (((PARENT_X / 2) - 3) / 2) - 6;
     mvwprintw(win, 0, middle_position, title);
@@ -48,7 +64,8 @@ void DrawBorders(WINDOW *screen) {
 
 }
 
-void DrawCompleteWindows(WINDOW *w1, WINDOW *w2){
+void DrawCompleteWindows(WINDOW *w1, WINDOW *w2) {
+    ResizeWindows(w1, w2);
     DrawBorders(w1);
     DrawBorders(w2);
     DrawWindowTitle(w1, "Transmit [TX]");
@@ -60,43 +77,20 @@ void DrawCompleteWindows(WINDOW *w1, WINDOW *w2){
 void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd, WINDOW *w_tx, WINDOW *w_rx) {
     const unsigned int maxCommandLength = 100;
     char commandBuffer[maxCommandLength];
-
-
-
     char responseBuffer[maxCommandLength];
-
-
-
 
     mvwprintw(w_tx, 5, 1, "Connecting to server\n");
     DrawCompleteWindows(w_tx, w_rx);
 
-    int new_y, new_x;
     int tx_linesCounter = 7;
     int rx_linesCounter = 1;
+    int commandCounter = 1;
     while(true) { // Main loop
         memset(commandBuffer, 0, sizeof(commandBuffer));
-        
-        getmaxyx(stdscr, new_y, new_x);
-        if (new_y != PARENT_Y || new_x != PARENT_X) {
-            PARENT_X = new_x;
-            PARENT_Y = new_y;
-            
-            wresize(w_tx, new_y, new_x);
-            wresize(w_rx, new_y, new_x/2);
-            
-            wclear(stdscr);
-            wclear(w_tx);
-            wclear(w_rx);
-            
-            DrawBorders(w_tx);
-            DrawBorders(w_rx);
-        }
         
         // Draw to our windows
         DrawCompleteWindows(w_tx, w_rx);
         mvwprintw(w_tx, tx_linesCounter++, 1, "Requested command (Press Enter to send): %s", commandBuffer);
-        mvwprintw(w_rx, rx_linesCounter++, 1, "Server response...");
 
         // refresh each window
         wrefresh(w_tx);
@@ -112,11 +106,12 @@ void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd, WI
         read(client_fifo_fd, responseBuffer, sizeof(responseBuffer));
 
         // Print the read message
-        mvwprintw(w_rx, rx_linesCounter++, 1, "%s\n", responseBuffer);
+        mvwprintw(w_rx, rx_linesCounter++, 1, "Server response... #%d", commandCounter++);
+        mvwprintw(w_rx, rx_linesCounter, 1, "%s", responseBuffer);
+        rx_linesCounter += 2;
     }
-
-
 }
+
 int main() {
     //set up initial windows
     initscr();

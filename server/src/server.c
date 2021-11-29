@@ -63,50 +63,50 @@ ClientContext* addClient(serverObject* server, __pid_t clientPID) {
     return (ClientContext*)AppendRefToLinkedList(&server->clients, newClient)->data;
 }
 
-void processClientsTransaction(ClientContext* client, char* querryBuffer) {
-    char* querryPointer = NULL;
-    char* querry = NULL;
+void processClientsTransaction(ClientContext* client, char* queryBuffer) {
+    char* queryPointer = NULL;
+    char* query = NULL;
 
     if (!client)
         return;
 
-    if (querryBuffer)
-        printf("Querry from [%d] >%s<\n", client->clientPID, querryBuffer);
-    querry = strtok_r(querryBuffer, " ", &querryPointer);
+    if (queryBuffer)
+        printf("query from [%d] >%s<\n", client->clientPID, queryBuffer);
+    query = strtok_r(queryBuffer, " ", &queryPointer);
         
-    if (!querry)
+    if (!query)
         return;
-    switch (querry[0]) {
+    switch (query[0]) {
         case 'A':
             addItem(client);
             break;
 
         case 'L':
             {
-                int nStart = atoi(strtok_r(NULL, "-", &querryPointer));
-                int nEnd = atoi(strtok_r(NULL, " ", &querryPointer));
+                int nStart = atoi(strtok_r(NULL, "-", &queryPointer));
+                int nEnd = atoi(strtok_r(NULL, " ", &queryPointer));
                 listItems(client, nStart, nEnd);
             }
             break;
 
         case 'E':
             {
-                int noVM = atoi(strtok_r(NULL, " ", &querryPointer));
+                int noVM = atoi(strtok_r(NULL, " ", &queryPointer));
                 removeItem(client, noVM);
             }
             break;
 
         case 'X':
             {
-                int noVM = atoi(strtok_r(NULL, " ", &querryPointer));
-                char* fileName = strtok_r(NULL, " ", &querryPointer);
+                int noVM = atoi(strtok_r(NULL, " ", &queryPointer));
+                char* fileName = strtok_r(NULL, " ", &queryPointer);
                 fileName[strlen(fileName)] = 0;
                 dispatchJob(client, noVM, fileName);
             }
             break;
 
         default: // Ignores malformed querries
-	        dprintf(client->clientFifo, "Unrecognized query\n");
+	        dprintf(client->clientFifo, "Unrecognized query.");
             break;
     }
 }
@@ -131,7 +131,7 @@ int processClients(serverObject* server) {
         if (!(client = searchClient(server, clientPID)))
             client = addClient(server, clientPID);
 
-        // Process the lient querry
+        // Process the lient query
         processClientsTransaction(client, slicePointer);
         
         memset(transactionBuffer, 0, sizeof(transactionBuffer));
