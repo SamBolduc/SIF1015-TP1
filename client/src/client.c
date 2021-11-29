@@ -103,7 +103,7 @@ void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd, WI
         if (commandBuffer[0] == 'q') {
             mvwprintw(stdscr, 0, 0, "EXITING NOW");
             wrefresh(stdscr);
-            break;
+            return;
         }
 
         // Read from FIFO
