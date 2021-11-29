@@ -132,6 +132,8 @@ int processClients(serverObject* server) {
 
         // Process the lient querry
         processClientsTransaction(client, slicePointer);
+        
+        memset(transactionBuffer, 0, sizeof(transactionBuffer));
     }
 
     return 0;

@@ -65,11 +65,12 @@ void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd, WI
     DrawCompleteWindows(w_tx, w_rx);
 
     int new_y, new_x;
-    int linesCounter = 7;
+    int tx_linesCounter = 7;
+    int rx_linesCounter = 1;
     while(true) { // Main loop
-        commandBuffer[0] = '\0';
-        getmaxyx(stdscr, new_y, new_x);
+        memset(commandBuffer, 0, sizeof(commandBuffer));
         
+        getmaxyx(stdscr, new_y, new_x);
         if (new_y != PARENT_Y || new_x != PARENT_X) {
             PARENT_X = new_x;
             PARENT_Y = new_y;
@@ -89,8 +90,8 @@ void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd, WI
         int middle_position = ((PARENT_X / 2) - 3) / 2 - 6;
         mvwprintw(w_tx, 0, middle_position, "Transmit [TX]");
         mvwprintw(w_rx, 0, middle_position, "Receive [RX]");
-        mvwprintw(w_tx, linesCounter, 1, "Requested command (Press Enter to send): %s", commandBuffer);
-        mvwprintw(w_rx, 1, 1, "Server response...");
+        mvwprintw(w_tx, tx_linesCounter++, 1, "Requested command (Press Enter to send): %s", commandBuffer);
+        mvwprintw(w_rx, rx_linesCounter++, 1, "Server response...");
         
         // refresh each window
         wrefresh(w_tx);
@@ -170,6 +171,9 @@ int main() {
     if (client_fifo)
         free(client_fifo);
 
+    endwin();
+    clear();
+    refresh();
     exit(EXIT_SUCCESS);
 
 Error:
