@@ -2,10 +2,7 @@
 // if it already exists, as a file. It then gets its own process ID, which forms some
 // of the data that will be sent to the server. The client FIFO is created, ready for
 // the next section.
-
 #define _GNU_SOURCE
-int PARENT_X;
-int PARENT_Y;
 
 #include "client.h"
 #include <ctype.h>
@@ -17,22 +14,12 @@ int PARENT_Y;
 #include <limits.h>
 #include <stdbool.h>
 #include <ncurses.h>
+#include <signal.h>
 
-void ResizeWindows(WINDOW *w_tx, WINDOW *w_rx) {
-    int new_y, new_x;
-    getmaxyx(stdscr, new_y, new_x);
-    if (new_y != PARENT_Y || new_x != PARENT_X) {
-        PARENT_X = new_x;
-        PARENT_Y = new_y;
-        
-        wresize(w_tx, new_y, new_x);
-        wresize(w_rx, new_y, new_x/2);
-        
-        wclear(stdscr);
-        wclear(w_tx);
-        wclear(w_rx);
-    }
-}
+int PARENT_X = 110;
+int PARENT_Y;
+WINDOW *w_tx;
+WINDOW *w_rx;
 
 void DrawWindowTitle(WINDOW *win, char* title) {
     int middle_position = (((PARENT_X / 2) - 3) / 2) - 6;
@@ -64,23 +51,35 @@ void DrawBorders(WINDOW *screen) {
 
 }
 
-void DrawCompleteWindows(WINDOW *w1, WINDOW *w2) {
-    ResizeWindows(w1, w2);
-    DrawBorders(w1);
-    DrawBorders(w2);
-    DrawWindowTitle(w1, "Transmit [TX]");
-    DrawWindowTitle(w2, "Receive [RX]");
-    wrefresh(w1);
-    wrefresh(w2);
+void ResizeWindows() {
+    int new_y, new_x;
+    getmaxyx(stdscr, new_y, new_x);
+    if (new_y != PARENT_Y || new_x != PARENT_X) {
+        PARENT_Y = new_y;
+        
+        wresize(w_tx, new_y, getmaxx(w_tx));
+        
+        wclear(stdscr);
+    }
 }
 
-void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd, WINDOW *w_tx, WINDOW *w_rx) {
+void DrawCompleteWindows() {
+    ResizeWindows();
+    DrawBorders(w_tx);
+    DrawBorders(w_rx);
+    DrawWindowTitle(w_tx, "Transmit [TX]");
+    DrawWindowTitle(w_rx, "Receive [RX]");
+    wrefresh(w_tx);
+    wrefresh(w_rx);
+}
+
+void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd) {
     const unsigned int maxCommandLength = 100;
     char commandBuffer[maxCommandLength];
     char responseBuffer[maxCommandLength];
 
     mvwprintw(w_tx, 5, 1, "Connecting to server\n");
-    DrawCompleteWindows(w_tx, w_rx);
+    DrawCompleteWindows();
 
     int tx_linesCounter = 7;
     int rx_linesCounter = 1;
@@ -90,14 +89,13 @@ void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd, WI
         memset(responseBuffer, 0, sizeof(responseBuffer));
         
         // Draw to our windows
-        DrawCompleteWindows(w_tx, w_rx);
-        mvwprintw(w_tx, tx_linesCounter++, 1, "Requested command (Press Enter to send): %s", commandBuffer);
+        DrawCompleteWindows();
+        mvwprintw(w_tx, tx_linesCounter++, 1, "Command (Press Enter to send): %s", commandBuffer);
 
-        // refresh each window
-        wrefresh(w_tx);
-        wrefresh(w_rx);
-        
-        wgetstr(w_tx, commandBuffer);
+        // Repeat until the user entered something
+        while(commandBuffer[0] == 0)
+            wgetstr(w_tx, commandBuffer);
+            
         // Print to FIFO
         dprintf(server_fifo_fd, "%u %s", clientPID, commandBuffer);
         if (commandBuffer[0] == 'q') {
@@ -110,23 +108,39 @@ void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd, WI
         read(client_fifo_fd, responseBuffer, sizeof(responseBuffer));
 
         // Print the read message
+        if (rx_linesCounter + 2 >= PARENT_Y) {
+            rx_linesCounter = 1;
+        }
         mvwprintw(w_rx, rx_linesCounter++, 1, "Server response... #%d", commandCounter++);
-        mvwprintw(w_rx, rx_linesCounter, 1, "%s", responseBuffer);
-        rx_linesCounter += 2;
+        mvwprintw(w_rx, rx_linesCounter++, 1, "%s", responseBuffer);
+        rx_linesCounter++;
+        
+        int x, y;
+        getyx(w_tx, x, y);
+        tx_linesCounter = x++;
+        if (tx_linesCounter + 2 >= PARENT_Y) {
+            tx_linesCounter = 7;
+        }
     }
+}
+
+void CleanTerminal(void) {
+    endwin();
 }
 
 int main() {
     //set up initial windows
     initscr();
-    curs_set(FALSE);
+    curs_set(TRUE);
+    
+    atexit(CleanTerminal);
 
-    getmaxyx(stdscr, PARENT_Y, PARENT_X);
+    PARENT_Y = getmaxy(stdscr);
 
-    WINDOW *w_tx = newwin(PARENT_Y, (PARENT_X / 2) - 3, 0, 0);
-    WINDOW *w_rx = newwin(PARENT_Y, (PARENT_X / 2) - 3, 0, (PARENT_X / 2) + 2);
+    w_tx = newwin(PARENT_Y, (PARENT_X / 2) - 3, 0, 0);
+    w_rx = newwin(PARENT_Y, (PARENT_X / 2) - 3, 0, (PARENT_X / 2) + 2);
 
-    DrawCompleteWindows(w_tx, w_rx);
+    DrawCompleteWindows();
 
     //set up initial connection
     pid_t clientPID;
@@ -135,16 +149,17 @@ int main() {
     
     // Open server fifo
     mvwprintw(w_tx, 1, 1, "Opening Server FIFO ...\n");
-    DrawCompleteWindows(w_tx, w_rx);
-
+    DrawCompleteWindows();
+    
+    
     server_fifo_fd = open(SERVER_FIFO_NAME, O_WRONLY);
     if (server_fifo_fd == -1) {
         fprintf(stderr, "Sorry, no server\n");
         refresh();
         exit(EXIT_FAILURE);
     }
-    mvwprintw(w_tx, 1, 40, "Success !\n");
-    DrawCompleteWindows(w_tx, w_rx);
+    mvwprintw(w_tx, 1, 27, "Success !\n");
+    DrawCompleteWindows();
     
     // Create client fifo
     mvwprintw(w_tx, 2, 1, "Creating Client FIFO ...\n");
@@ -155,26 +170,26 @@ int main() {
         refresh();
         goto Error;
     }
-    mvwprintw(w_tx, 2, 40, "Success !\n");
-    DrawCompleteWindows(w_tx, w_rx);
+    mvwprintw(w_tx, 2, 27, "Success !\n");
+    DrawCompleteWindows();
     
     // Sending pid to server
     mvwprintw(w_tx, 3, 1, "Sending PID ...\n");
-    DrawCompleteWindows(w_tx, w_rx);
+    DrawCompleteWindows();
     dprintf(server_fifo_fd, "%u\n", clientPID);
-    mvwprintw(w_tx, 3, 40, "Success !\n");
-    DrawCompleteWindows(w_tx, w_rx);
+    mvwprintw(w_tx, 3, 27, "Success !\n");
+    DrawCompleteWindows();
 
     // Open client fifo
     mvwprintw(w_tx, 4, 1, "Oppening Client FIFO ...\n");
-    DrawCompleteWindows(w_tx, w_rx);
+    DrawCompleteWindows();
     if ((client_fifo_fd = open(client_fifo, O_RDONLY)) == -1) {
         goto Error;
     }
-    mvwprintw(w_tx, 4, 40, "Success !\n");
-    DrawCompleteWindows(w_tx, w_rx);
+    mvwprintw(w_tx, 4, 27, "Success !\n");
+    DrawCompleteWindows();
 
-    ConnectToServer(clientPID, server_fifo_fd, client_fifo_fd, w_tx, w_rx);
+    ConnectToServer(clientPID, server_fifo_fd, client_fifo_fd);
 
     close(server_fifo_fd);
     unlink(client_fifo);
@@ -182,9 +197,6 @@ int main() {
     if (client_fifo)
         free(client_fifo);
 
-    endwin();
-    clear();
-    refresh();
     exit(EXIT_SUCCESS);
 
 Error:
