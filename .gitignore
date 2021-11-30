@@ -50,6 +50,6 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
-.idea/.idea.SIF1015-TP1.dir/.idea/workspace.xml
+*.idea
 server/Server_VMS
 client/Client_VMS
