@@ -27,5 +27,6 @@
 
     int openFifo(char* path, fifoFileDescriptor* fifo, fifoOpenMode flags);
     int closeFifo(fifoFileDescriptor* fifo);
+    int checkFifo(fifoFileDescriptor fifo);
 
 #endif
