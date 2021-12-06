@@ -22,7 +22,7 @@
     #include "linkedList.h"
     #include "virtualMachine.h"
 
-    typedef LinkedList clientList;
+    typedef LinkedList ClientList;
 
     typedef struct {
         __pid_t clientPID;

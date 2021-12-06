@@ -22,7 +22,7 @@
 
     typedef struct {
         fifoFileDescriptor serverFifo;
-        clientList* clients;
+        ClientList* clients;
     } serverObject;
     
     serverObject setupServer();

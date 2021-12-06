@@ -61,6 +61,28 @@ void FreeLinkedList(LinkedList** List){
     }
 }
 
+LinkedList** SearchNodeInList(LinkedList** list, LinkedList* node) {
+    if (!list)
+        return NULL;
+    while (*list) {
+        if ((*list) == node)
+            return list;
+        list = &(*list)->next;
+    }
+    return NULL;
+}
+
+LinkedList** SearchDataInList(LinkedList** list, void* data) {
+    if (!list)
+        return NULL;
+    while (*list) {
+        if ((*list)->data == data)
+            return list;
+        list = &(*list)->next;
+    }
+    return NULL;
+}
+
 void DeleteLinkedListNode(LinkedList** node){
     LinkedList* nextNode = NULL;
     if (!node)

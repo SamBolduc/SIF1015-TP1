@@ -20,6 +20,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <errno.h>
 
 typedef enum {
     pathNotFound = 1,
@@ -51,5 +52,14 @@ int closeFifo(fifoFileDescriptor* fifo) {
         return -noFifoProvided;
     if (close(*fifo) == -1)
         return -unableToCloseFifo;
+    return 0;
+}
+
+int checkFifo(fifoFileDescriptor fifo) {
+    if (write(fifo, "\0", 1) == -1){
+        if (errno == EPIPE){
+            return -1;
+        }
+    }
     return 0;
 }

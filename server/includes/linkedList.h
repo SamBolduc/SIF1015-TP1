@@ -27,8 +27,10 @@
     };
 
     LinkedList*  AppendToLinkedList(LinkedList** List, void* newData, size_t dataSize);
-    LinkedList* AppendRefToLinkedList(LinkedList** List, void* newDataRef);
+    LinkedList*  AppendRefToLinkedList(LinkedList** List, void* newDataRef);
     void         FreeLinkedList(LinkedList** List);
+    LinkedList** SearchNodeInList(LinkedList** list, LinkedList* node);
+    LinkedList** SearchDataInList(LinkedList** list, void* data);
     void         DeleteLinkedListNode(LinkedList** node);
 
 #endif
