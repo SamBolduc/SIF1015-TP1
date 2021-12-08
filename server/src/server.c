@@ -24,6 +24,11 @@
 #include <ctype.h>
 #include <signal.h>
 
+#define NonNull(a) { \
+    if (!(a))        \
+        return;      \
+}
+
 static const serverObject emptyServer;
 
 serverObject setupServer() {
@@ -122,25 +127,28 @@ void processClientsTransaction(serverObject* server, ClientContext* client, char
 
         case 'L':
             {
-                int nStart = atoi(strtok_r(NULL, "-", &queryPointer));
-                int nEnd = atoi(strtok_r(NULL, " ", &queryPointer));
-                listItems(client, nStart, nEnd);
+                char* nStart = NULL, *nEnd = NULL;
+                NonNull(nStart = strtok_r(NULL, "-", &queryPointer));
+                NonNull(nEnd = strtok_r(NULL, " ", &queryPointer));
+                listItems(client, atoi(nStart), atoi(nEnd));
             }
             break;
 
         case 'E':
             {
-                int noVM = atoi(strtok_r(NULL, " ", &queryPointer));
-                removeItem(client, noVM);
+                char* noVM = NULL;
+                NonNull(noVM = strtok_r(NULL, " ", &queryPointer));
+                removeItem(client, atoi(noVM));
             }
             break;
 
         case 'X':
             {
-                int noVM = atoi(strtok_r(NULL, " ", &queryPointer));
-                char* fileName = strtok_r(NULL, " ", &queryPointer);
+                char* noVM = NULL, *fileName = NULL;
+                NonNull(noVM = strtok_r(NULL, " ", &queryPointer));
+                NonNull(fileName = strtok_r(NULL, " ", &queryPointer));
                 fileName[strlen(fileName)] = 0;
-                dispatchJob(client, noVM, fileName);
+                dispatchJob(client, atoi(noVM), fileName);
             }
             break;
 

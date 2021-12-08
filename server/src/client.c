@@ -29,22 +29,22 @@
   #	RETOUR:
 */
 void addItem(ClientContext* client) {
-	/* Création de l'enregistrement en mémoire */
-	VirtualMachine* newVM = (VirtualMachine*)calloc(1, sizeof(VirtualMachine));
+    /* Création de l'enregistrement en mémoire */
+    VirtualMachine* newVM = (VirtualMachine*)calloc(1, sizeof(VirtualMachine));
 
-	/* Affectation des valeurs des champs */
-	newVM->noVM = ++client->nbVM;
-	newVM->ptrDebutVM = (unsigned short*)malloc(sizeof(unsigned short)*VM_SEGMENT_SIZE);
+    /* Affectation des valeurs des champs */
+    newVM->noVM = ++client->nbVM;
+    newVM->ptrDebutVM = (unsigned short*)malloc(sizeof(unsigned short)*VM_SEGMENT_SIZE);
     newVM->consoleState = &client->fifoState;
     newVM->console = &client->clientFifo;
-	
-	pthread_mutex_lock(&client->vmState); /* Lock head */
-	
+    
+    pthread_mutex_lock(&client->vmState); /* Lock head */
+    
     newVM = AppendRefToLinkedList(&client->vms, newVM)->data; /* Add the VM to the linked list */
-	pthread_create(&newVM->vmProcess, NULL, &virtualMachine, newVM); /* Create the VM in a new thread */
+    pthread_create(&newVM->vmProcess, NULL, &virtualMachine, newVM); /* Create the VM in a new thread */
 
     dprintf(client->clientFifo, "New VM => #%d \t Pointer: %p \t", newVM->noVM, (void*)newVM->ptrDebutVM);
-	
+    
     pthread_mutex_unlock(&client->vmState); /* Unlock head */
 }
 
@@ -69,22 +69,23 @@ VMList* findItem(ClientContext* client, const unsigned int noVM) {
   # ENTREE: noVM: numéro du noeud a retirer
 */
 void removeItem(ClientContext* client, const unsigned int noVM) {
-	VMList* VM = NULL;
-    
-    if (!(VM = findItem(client, noVM))){
+    VMList* VM = NULL;
+
+    if (!client)
         return;
+    if (!(VM = findItem(client, noVM)))
+        return;
+
+    ((VirtualMachine*)VM->data)->kill = 1;
+    ((VirtualMachine*)VM->data)->noVM = 0;
+    client->nbVM--;
+
+    VM = VM->next;
+    while (VM) {
+        if (((VirtualMachine*)VM->data)->noVM)
+            ((VirtualMachine*)VM->data)->noVM--;
+        VM = VM->next;
     }
-
-	((VirtualMachine*)VM->data)->kill = 1;
-	((VirtualMachine*)VM->data)->noVM = 0;
-	client->nbVM--;
-
-	VM = VM->next;
-	while (VM) {
-		if (((VirtualMachine*)VM->data)->noVM)
-			((VirtualMachine*)VM->data)->noVM--;
-		VM = VM->next;
-	}
 }
 
 /*
@@ -94,7 +95,7 @@ void removeItem(ClientContext* client, const unsigned int noVM) {
   #
 */
 void listItems(ClientContext* client, const int start, const int end) {
-	VMList *list = NULL;
+    VMList *list = NULL;
     VirtualMachine* currentVM = NULL;
     int i;
 
@@ -102,9 +103,9 @@ void listItems(ClientContext* client, const int start, const int end) {
         return;
     }
 
-	/* Affichage des entêtes de colonnes */
-	pthread_mutex_lock(&client->vmState); /* Lock head */
-	pthread_mutex_lock(&client->fifoState); /* Lock console */
+    /* Affichage des entêtes de colonnes */
+    pthread_mutex_lock(&client->vmState); /* Lock head */
+    pthread_mutex_lock(&client->fifoState); /* Lock console */
 
     if (checkFifo(client->clientFifo) != -1) {
         dprintf(client->clientFifo, "noVM    Busy?    Adresse Debut VM        kill ?              \n");
@@ -122,7 +123,7 @@ void listItems(ClientContext* client, const int start, const int end) {
     }
 
     pthread_mutex_unlock(&client->fifoState); /* Unlock console */
-	pthread_mutex_unlock(&client->vmState); /* Unlock head */
+    pthread_mutex_unlock(&client->vmState); /* Unlock head */
 }
 
 int dispatchJob(ClientContext* client, int noVM, char* sourcefname) {
