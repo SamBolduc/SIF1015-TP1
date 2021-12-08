@@ -181,9 +181,9 @@ void checkClients(serverObject* server) {
             printf("Client [%d] CRASHED !\n", client->clientPID);
             removeClient(server, client);
             continue;
-        } else {
+        } /*else {
             printf("Client [%d] VALID\n", client->clientPID);
-        }
+        }*/
         pthread_mutex_unlock(&client->fifoState);
 
     }
