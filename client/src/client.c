@@ -15,11 +15,15 @@
 #include <stdbool.h>
 #include <ncurses.h>
 #include <signal.h>
+#include <semaphore.h>
 
 int PARENT_X = 110;
 int PARENT_Y;
 WINDOW *w_tx;
 WINDOW *w_rx;
+sem_t w_sem;
+int tx_linesCounter = 7;
+int rx_linesCounter = 1;
 
 void DrawWindowTitle(WINDOW *win, char* title) {
     int middle_position = (((PARENT_X / 2) - 3) / 2) - 6;
@@ -73,54 +77,95 @@ void DrawCompleteWindows() {
     wrefresh(w_rx);
 }
 
+void Draw_w_tx() {
+    DrawBorders(w_tx);
+    DrawWindowTitle(w_tx, "Transmit [TX]");
+    wrefresh(w_tx);
+}
+
+void Draw_w_rx() {
+    DrawBorders(w_rx);
+    DrawWindowTitle(w_rx, "Receive [RX]");
+    wrefresh(w_rx);
+}
+
 void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd) {
     const unsigned int maxCommandLength = 100;
     char commandBuffer[maxCommandLength];
     char responseBuffer[maxCommandLength];
+    sem_init(&w_sem, 1, 1);
 
     mvwprintw(w_tx, 5, 1, "Connecting to server\n");
     DrawCompleteWindows();
+    int pid = fork();
 
-    int tx_linesCounter = 7;
-    int rx_linesCounter = 1;
-    int commandCounter = 1;
     while(true) { // Main loop
-        memset(commandBuffer, 0, sizeof(commandBuffer));
-        memset(responseBuffer, 0, sizeof(responseBuffer));
-        
-        // Draw to our windows
-        DrawCompleteWindows();
-        mvwprintw(w_tx, tx_linesCounter++, 1, "Command (Press Enter to send): %s", commandBuffer);
-
-        // Repeat until the user entered something
-        while(commandBuffer[0] == 0)
-            wgetstr(w_tx, commandBuffer);
+        sem_wait(&w_sem);
+        if (pid == 0) {
+            /****************************** CHILD ******************************/
+            memset(responseBuffer, 0, sizeof(responseBuffer));
             
-        // Print to FIFO
-        dprintf(server_fifo_fd, "%u %s", clientPID, commandBuffer);
-        if (commandBuffer[0] == 'q') {
-            mvwprintw(stdscr, 0, 0, "EXITING NOW");
-            wrefresh(stdscr);
-            return;
-        }
+            // Read from FIFO
+            read(client_fifo_fd, responseBuffer, sizeof(responseBuffer));
 
-        // Read from FIFO
-        read(client_fifo_fd, responseBuffer, sizeof(responseBuffer));
+            // If the response's first char isn't the NULL character
+            if (responseBuffer[0] != '\0') {
+                // Print the read message
+                if (rx_linesCounter + 2 >= PARENT_Y) {
+                    werase(w_rx);
+                    wrefresh(w_rx);
+                    rx_linesCounter = 1;
+                }
+                
+                int x, y;
+                getyx(w_tx, x, y);
+                mvwprintw(w_rx, rx_linesCounter++, 1, "%s", responseBuffer);
+                rx_linesCounter++;
 
-        // Print the read message
-        if (rx_linesCounter + 2 >= PARENT_Y) {
-            rx_linesCounter = 1;
+                Draw_w_rx();
+                wmove(w_tx, x, y);
+                wrefresh(w_tx);
+
+                //DrawCompleteWindows();
+                // wmove(w_tx, tx_linesCounter, 32);
+                // wrefresh(w_tx);
+            }
+            /*******************************************************************/
         }
-        mvwprintw(w_rx, rx_linesCounter++, 1, "Server response... #%d", commandCounter++);
-        mvwprintw(w_rx, rx_linesCounter++, 1, "%s", responseBuffer);
-        rx_linesCounter++;
-        
-        int x, y;
-        getyx(w_tx, x, y);
-        tx_linesCounter = x++;
-        if (tx_linesCounter + 2 >= PARENT_Y) {
-            tx_linesCounter = 7;
+        else {
+            /***************************** PARENT ******************************/
+            memset(commandBuffer, 0, sizeof(commandBuffer));
+            int x, y;
+            
+            if (tx_linesCounter + 2 >= PARENT_Y) {
+                werase(w_tx);
+                wrefresh(w_tx);
+                tx_linesCounter = 1;
+            }
+
+            Draw_w_tx();
+            
+            mvwprintw(w_tx, tx_linesCounter++, 1, "Command (Press Enter to send): %s", commandBuffer);
+
+            // Repeat until the user entered something
+            while(commandBuffer[0] == 0) {
+                //mvwprintw(w_tx, tx_linesCounter++, 1, "yx: %d %d", x, y);
+                wmove(w_tx, tx_linesCounter - 1, 32);
+                wgetstr(w_tx, commandBuffer);
+            }
+            
+            // Print to FIFO
+            dprintf(server_fifo_fd, "%u %s", clientPID, commandBuffer);
+            
+            // If 'q' was pressed, then we exit the program
+            if (commandBuffer[0] == 'q') {
+                mvwprintw(stdscr, 0, 0, "EXITING NOW");
+                wrefresh(stdscr);
+                return;
+            }
+            /*******************************************************************/
         }
+        sem_post(&w_sem);
     }
 }
 

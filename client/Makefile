@@ -27,7 +27,7 @@ WINCC = x86_64-w64-mingw32-gcc
 
 # Compile / Link Flags
 CFLAGS += -c -Wall -std=c99 -pedantic-errors -g
-LDFLAGS = -lncurses
+LDFLAGS = -lncurses -pthread
 
 WINLDFLAGS = "-L /usr/x86_64-w64-mingw32/lib/ -lmingw32 -lz -llzm -lm -mwindows"
 
