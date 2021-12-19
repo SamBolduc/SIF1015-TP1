@@ -17,39 +17,171 @@
 #include <pthread.h>
 #include <ctype.h>
 #include <signal.h>
+#include <ncurses.h>
+
+WINDOW *w_tx;
+WINDOW *w_rx;
+int PARENT_X = 110;
+int PARENT_Y;
+
+void RX(int client_fifo_fd, char* responseBuffer) {
+    char *received = malloc (sizeof (char) * 100);
+    read(client_fifo_fd, received, 100);
+    
+    strcpy(responseBuffer, received);
+}
+
+bool TX(char* command, pid_t clientPID, int server_fifo_fd, int maxCommandLength) {
+    dprintf(server_fifo_fd, "%d %s", clientPID, command);
+
+    // return toupper(command[0]) != 'Q';
+    return true;
+}
+
+void DrawWindowTitle(WINDOW *win, char* title) {
+    int middle_position = (((PARENT_X / 2) - 3) / 2) - 6;
+    mvwprintw(win, 0, middle_position, title);
+}
+
+void DrawBorders(WINDOW *screen) {
+    int x, y, i;
+    
+    getmaxyx(screen, y, x);
+    
+    // 4 corners
+    mvwprintw(screen, 0, 0, "+");
+    mvwprintw(screen, y - 1, 0, "+");
+    mvwprintw(screen, 0, x - 1, "+");
+    mvwprintw(screen, y - 1, x - 1, "+");
+    
+    // Sides
+    for (i = 1; i < (y - 1); i++) {
+        mvwprintw(screen, i, 0, "|");
+        mvwprintw(screen, i, x - 1, "|");
+    }
+    
+    // Top and bottom
+    for (i = 1; i < (x - 1); i++) {
+        mvwprintw(screen, 0, i, "-");
+        mvwprintw(screen, y - 1, i, "-");
+    }
+
+}
+
+void Draw_w_tx() {
+    DrawBorders(w_tx);
+    DrawWindowTitle(w_tx, "Transmit [TX]");
+    wrefresh(w_tx);
+}
+
+void Draw_w_rx() {
+    DrawBorders(w_rx);
+    DrawWindowTitle(w_rx, "Receive [RX]");
+    wrefresh(w_rx);
+}
+
+void DrawCompleteWindows() {
+    //ResizeWindows();
+    DrawBorders(w_tx);
+    DrawBorders(w_rx);
+    DrawWindowTitle(w_tx, "Transmit [TX]");
+    DrawWindowTitle(w_rx, "Receive [RX]");
+    wrefresh(w_tx);
+    wrefresh(w_rx);
+}
 
 void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd) {
     const unsigned int maxCommandLength = 100;
     char commandBuffer[maxCommandLength];
-    char charBuffer = '\0';
-    pid_t pid;
 
     printf("Connecting to server\n");
     dprintf(server_fifo_fd, "%d\n", clientPID);
 
-    if (!(pid = fork())){
+    werase(stdscr);
+    wrefresh(stdscr);
+    DrawCompleteWindows();
+    int tx_linesCounter = 1;
+    int rx_linesCounter = 1;
+    int pid = fork();
+
+    if (pid == 0) {
         while (true) {
-            if (read(client_fifo_fd, &charBuffer, 1) != EOF)
-                putc(charBuffer, stdout);
+            /************* RX LOOP *************/
+            char responseBuffer[maxCommandLength * 10];
+            RX(client_fifo_fd, responseBuffer);
+            
+            // Read from FIFO
+            read(client_fifo_fd, responseBuffer, sizeof(responseBuffer));
+
+            // If the response's first char isn't the NULL character
+            if (strncmp(responseBuffer, "", 1)) {
+                // Print the read message
+                if (rx_linesCounter + 2 >= PARENT_Y) {
+                    // If the linesCounter is higher than the window size, then reset the linesCounter to 1
+                    werase(w_rx);
+                    wrefresh(w_rx);
+                    rx_linesCounter = 1;
+                }
+                
+                // Lines below are supposed to save the cursor position at TX window and re-set it after having printed it's lines on RX window
+                int x, y;
+                getyx(w_tx, x, y);
+                mvwprintw(w_rx, rx_linesCounter++, 1, "%s", responseBuffer);
+                rx_linesCounter++;
+
+                Draw_w_rx();
+                wmove(w_tx, x, y);
+                wrefresh(w_tx);
+            }
         }
     } else {
         while (true) { // Main loop
-            fgets(commandBuffer, maxCommandLength, stdin);
-            dprintf(server_fifo_fd, "%d %s", clientPID, commandBuffer);
-            if (toupper(commandBuffer[0]) == 'Q')
-                break;
+            /************* TX LOOP *************/
+            memset(commandBuffer, 0, sizeof(commandBuffer));
+
+            if (tx_linesCounter + 2 >= PARENT_Y) {
+                // If the linesCounter is higher than the window size, then reset the linesCounter to 1
+                werase(w_tx);
+                wrefresh(w_tx);
+                tx_linesCounter = 1;
+            }
+
+            mvwprintw(w_tx, tx_linesCounter++, 1, "Command (Press Enter to send): %s", commandBuffer);
+            Draw_w_tx();
+            
+            // Repeat until the user entered something
+            while(commandBuffer[0] == 0) {
+                //mvwprintw(w_tx, tx_linesCounter++, 1, "yx: %d %d", x, y);
+                wmove(w_tx, tx_linesCounter - 1, 32);
+                wgetstr(w_tx, commandBuffer);
+            }
+            
+            TX(commandBuffer, clientPID, server_fifo_fd, maxCommandLength);
         }
     }
     kill(pid, SIGTERM);
 }
 
+void CleanTerminal(void) {
+    endwin();
+}
+
 int main() {
+    //set up initial windows
+    initscr();
+    PARENT_Y = getmaxy(stdscr);
+    w_tx = newwin(PARENT_Y, (PARENT_X / 2) - 3, 0, 0);
+    w_rx = newwin(PARENT_Y, (PARENT_X / 2) - 3, 0, (PARENT_X / 2) + 2);
+    curs_set(TRUE);
+    atexit(CleanTerminal);
+    DrawCompleteWindows();
+
     pid_t clientPID;
     int server_fifo_fd, client_fifo_fd;
     char* client_fifo = NULL;
 
     // Open server fifo
-    printf("Oppening Server FIFO ...\n");
+    printf("Opening Server FIFO ...\n");
     server_fifo_fd = open(SERVER_FIFO_NAME, O_WRONLY);
     if (server_fifo_fd == -1) {
         fprintf(stderr, "Sorry, no server\n");
