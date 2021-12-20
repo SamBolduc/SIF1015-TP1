@@ -6,6 +6,7 @@
 #define _GNU_SOURCE
 
 #include "client.h"
+#include <semaphore.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -23,19 +24,17 @@ WINDOW *w_tx;
 WINDOW *w_rx;
 int PARENT_X = 110;
 int PARENT_Y;
+sem_t console_sem;
 
 void RX(int client_fifo_fd, char* responseBuffer) {
-    char *received = malloc (sizeof (char) * 100);
-    read(client_fifo_fd, received, 100);
-    
+    char *received = malloc (sizeof (char) * 1000);
+    read(client_fifo_fd, received, 1000);
     strcpy(responseBuffer, received);
 }
 
 bool TX(char* command, pid_t clientPID, int server_fifo_fd, int maxCommandLength) {
     dprintf(server_fifo_fd, "%d %s", clientPID, command);
-
-    // return toupper(command[0]) != 'Q';
-    return true;
+    return toupper(command[0]) != 'Q';
 }
 
 void DrawWindowTitle(WINDOW *win, char* title) {
@@ -93,6 +92,8 @@ void DrawCompleteWindows() {
 void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd) {
     const unsigned int maxCommandLength = 100;
     char commandBuffer[maxCommandLength];
+    pid_t pid;
+    sem_init(&console_sem, 1, 1);
 
     printf("Connecting to server\n");
     dprintf(server_fifo_fd, "%d\n", clientPID);
@@ -102,16 +103,15 @@ void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd) {
     DrawCompleteWindows();
     int tx_linesCounter = 1;
     int rx_linesCounter = 1;
-    int pid = fork();
 
-    if (pid == 0) {
+    if (!(pid = fork())) {
         while (true) {
             /************* RX LOOP *************/
+            sem_wait(&console_sem);
             char responseBuffer[maxCommandLength * 10];
-            RX(client_fifo_fd, responseBuffer);
-            
+
             // Read from FIFO
-            read(client_fifo_fd, responseBuffer, sizeof(responseBuffer));
+            RX(client_fifo_fd, responseBuffer);
 
             // If the response's first char isn't the NULL character
             if (strncmp(responseBuffer, "", 1)) {
@@ -133,10 +133,12 @@ void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd) {
                 wmove(w_tx, x, y);
                 wrefresh(w_tx);
             }
+            sem_post(&console_sem);
         }
     } else {
-        while (true) { // Main loop
+        do { // Main loop
             /************* TX LOOP *************/
+            sem_wait(&console_sem);
             memset(commandBuffer, 0, sizeof(commandBuffer));
 
             if (tx_linesCounter + 2 >= PARENT_Y) {
@@ -146,8 +148,8 @@ void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd) {
                 tx_linesCounter = 1;
             }
 
-            mvwprintw(w_tx, tx_linesCounter++, 1, "Command (Press Enter to send): %s", commandBuffer);
             Draw_w_tx();
+            mvwprintw(w_tx, tx_linesCounter++, 1, "Command (Press Enter to send): %s", commandBuffer);
             
             // Repeat until the user entered something
             while(commandBuffer[0] == 0) {
@@ -156,8 +158,8 @@ void ConnectToServer(pid_t clientPID, int server_fifo_fd, int client_fifo_fd) {
                 wgetstr(w_tx, commandBuffer);
             }
             
-            TX(commandBuffer, clientPID, server_fifo_fd, maxCommandLength);
-        }
+            sem_post(&console_sem);
+        } while (TX(commandBuffer, clientPID, server_fifo_fd, maxCommandLength));
     }
     kill(pid, SIGTERM);
 }
