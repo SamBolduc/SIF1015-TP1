@@ -43,7 +43,7 @@ void addItem(ClientContext* client) {
     newVM = AppendRefToLinkedList(&client->vms, newVM)->data; /* Add the VM to the linked list */
     pthread_create(&newVM->vmProcess, NULL, &virtualMachine, newVM); /* Create the VM in a new thread */
 
-    //dprintf(client->clientFifo, "New VM => #%d \t Pointer: %p \t\n", newVM->noVM, (void*)newVM->ptrDebutVM);
+    IOWrite(client->clientIO, "New VM => #%d \t Pointer: %p \t\n", newVM->noVM, (void*)newVM->ptrDebutVM);
     
     pthread_mutex_unlock(&client->vmState); /* Unlock head */
 }
@@ -95,9 +95,8 @@ void removeItem(ClientContext* client, const unsigned int noVM) {
   #
 */
 void listItems(ClientContext* client, const int start, const int end) {
-    //VMList *list = NULL;
-    //VirtualMachine* currentVM = NULL;
-    //int i;
+    VMList *list = NULL;
+    VirtualMachine* currentVM = NULL;
 
     if (!client) {
         return;
@@ -106,39 +105,35 @@ void listItems(ClientContext* client, const int start, const int end) {
     /* Affichage des entêtes de colonnes */
     pthread_mutex_lock(&client->vmState); /* Lock head */
     pthread_mutex_lock(&client->fifoState); /* Lock console */
-/*
-    if (checkFifo(client->clientFifo) != -1) {
-        //dprintf(client->clientFifo, "noVM    Busy?    Adresse Debut VM        kill ?              \n");
-        //dprintf(client->clientFifo, "=============================================================\n");
-        list = client->vms; // premier element
-        for (i = start; (i <= end) && list; i++) {
-            currentVM = (VirtualMachine*)list->data;
-            //dprintf(client->clientFifo, "%d \t %d \t %p \t %s\n", currentVM->noVM, currentVM->busy, (void*)currentVM->ptrDebutVM, currentVM->kill ? "flagged for deletion" : "alive");
-            
-            list = list->next;
-        }
 
-        // Affichage des pieds de colonnes
-        //dprintf(client->clientFifo, "=============================================================\n\n");
-    }*/
+    IOWrite(client->clientIO, "noVM    Busy?    Adresse Debut VM        kill ?              \n");
+    IOWrite(client->clientIO, "=============================================================\n");
+    list = client->vms; // premier element
+    for (int i = start; (i <= end) && list; i++) {
+        currentVM = (VirtualMachine*)list->data;
+        IOWrite(client->clientIO, "%d \t %d \t %p \t %s\n", currentVM->noVM, currentVM->busy, (void*)currentVM->ptrDebutVM, currentVM->kill ? "flagged for deletion" : "alive");
+        
+        list = list->next;
+    }
+
+    // Affichage des pieds de colonnes
+    IOWrite(client->clientIO, "=============================================================\n\n");
 
     pthread_mutex_unlock(&client->fifoState); /* Unlock console */
     pthread_mutex_unlock(&client->vmState); /* Unlock head */
 }
 
 int dispatchJob(ClientContext* client, int noVM, char* sourcefname) {
-    //LinkedList *VM = findItem(client, noVM);
+    LinkedList *VM = findItem(client, noVM);
     
     pthread_mutex_lock(&client->fifoState);
-    /*
-    if (checkFifo(client->clientFifo) != -1) {
-        if (!((VirtualMachine*)VM->data)->kill){
-            dprintf(client->clientFifo, "Job %s dispatched to vm %d !\n", sourcefname, noVM);        
-            AppendToLinkedList(&((VirtualMachine*)VM->data)->binaryList, sourcefname, sizeof(char)*(strlen(sourcefname) + 1));
-        } else {
-            dprintf(client->clientFifo, "Couldn't dispatch job %s ! VM %d already flagged for deletion !\n", sourcefname, noVM);
-        }
-    }*/
+
+    if (!((VirtualMachine*)VM->data)->kill){
+        IOWrite(client->clientIO, "Job %s dispatched to vm %d !\n", sourcefname, noVM);        
+        AppendToLinkedList(&((VirtualMachine*)VM->data)->binaryList, sourcefname, sizeof(char)*(strlen(sourcefname) + 1));
+    } else {
+        IOWrite(client->clientIO, "Couldn't dispatch job %s ! VM %d already flagged for deletion !\n", sourcefname, noVM);
+    }
 
     pthread_mutex_unlock(&client->fifoState);
 

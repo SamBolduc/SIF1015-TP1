@@ -90,7 +90,7 @@ static void* processClientsTransaction(void* args) {
 
     printf("New client [%p] CONNECTED !\n", (void*)client->clientIO);
 
-    IOWrite(client->clientIO, "Welcome !\n");
+    IOWrite(client->clientIO, "Welcome ! Little one\n");
 
     while (true) {
         IORead(client->clientIO, buffer, 1024);
@@ -104,7 +104,7 @@ static void* processClientsTransaction(void* args) {
             case 'L':
                 {
                     char* nStart = NULL, *nEnd = NULL;
-                    NonNull(nStart = strtok_r(NULL, "-", &queryPointer), NULL);
+                    NonNull(nStart = strtok_r(buffer, "-", &queryPointer), NULL);
                     NonNull(nEnd = strtok_r(NULL, " ", &queryPointer), NULL);
                     listItems(client, atoi(nStart), atoi(nEnd));
                 }
@@ -113,7 +113,7 @@ static void* processClientsTransaction(void* args) {
             case 'E':
                 {
                     char* noVM = NULL;
-                    NonNull(noVM = strtok_r(NULL, " ", &queryPointer), NULL);
+                    NonNull(noVM = strtok_r(buffer, " ", &queryPointer), NULL);
                     removeItem(client, atoi(noVM));
                 }
                 break;
@@ -121,7 +121,7 @@ static void* processClientsTransaction(void* args) {
             case 'X':
                 {
                     char* noVM = NULL, *fileName = NULL;
-                    NonNull(noVM = strtok_r(NULL, " ", &queryPointer), NULL);
+                    NonNull(noVM = strtok_r(buffer, " ", &queryPointer), NULL);
                     NonNull(fileName = strtok_r(NULL, " ", &queryPointer), NULL);
                     fileName[strlen(fileName)] = 0;
                     dispatchJob(client, atoi(noVM), fileName);

@@ -16,6 +16,16 @@ void ServerHandShake() {
     send(socketFileDiscriptor, buffer, strlen(buffer), 0);
 }
 
+void ReadFromServer(char* buffer, size_t length) {
+    if (!buffer)
+        return;
+    read(socketFileDiscriptor, buffer, length);
+}
+
+void SendToServer(char* buffer) {
+    send(socketFileDiscriptor, buffer, strlen(buffer), 0);
+}
+
 void ConnectToServer() {
     // Create INET socket
     if ((socketFileDiscriptor = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0)) < 0) {

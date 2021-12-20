@@ -1,6 +1,9 @@
 #include "send_tui.h"
 
 #include "tui.h"
+#include "system.h"
+
+#include <unistd.h>
 
 static pthread_t sendThread;
 static pthread_mutex_t* ncursesMutexPointer;
@@ -11,6 +14,10 @@ static void* SendTuiThread(void* args) {
     pthread_mutex_lock(ncursesMutexPointer);
     sendWindow = CreateNewNcursesWindow(LINES / 2, 0, LINES / 2, 0);
     pthread_mutex_unlock(ncursesMutexPointer);
+
+    SendToServer("A");
+    sleep(1);
+    SendToServer("L 1-1");
 
     while (true) {
         pthread_mutex_lock(ncursesMutexPointer);
