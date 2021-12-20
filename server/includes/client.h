@@ -18,15 +18,15 @@
 #ifndef _CLIENT_H
 #define _CLIENT_H
 
-    #include "fifoManager.h"
     #include "linkedList.h"
     #include "virtualMachine.h"
+    #include "IOManager.h"
 
     typedef LinkedList ClientList;
 
     typedef struct {
-        __pid_t clientPID;
-        fifoFileDescriptor clientFifo;
+        IOClient* clientIO; // formely CLientPID
+        pthread_t clientThread;
         unsigned int nbVM;
         VMList* vms;
         pthread_mutex_t vmState;

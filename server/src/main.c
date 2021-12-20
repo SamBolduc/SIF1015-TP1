@@ -19,17 +19,14 @@
 #include "server.h"
 
 int main(int argc, char** argv) {
-    serverObject server;
-
     // setup Server fifo
-    server = setupServer();
+    setupServer();
 
     // listening for connections
-    if (processClients(&server) < 0)
-        printf("Error : name of the error\n");
+    processClients();
 
     // cleanup
-    cleanupServer(&server);
+    //cleanupServer(&server);
 
     return 0;
 }

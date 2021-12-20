@@ -17,6 +17,8 @@
 
 #define _GNU_SOURCE
 #include "server.h"
+#include "IOManager.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -24,56 +26,27 @@
 #include <ctype.h>
 #include <signal.h>
 
-#define NonNull(a) { \
+#define NonNull(a, b) { \
     if (!(a))        \
-        return;      \
+        return b;      \
 }
 
-static const serverObject emptyServer;
+static ClientList* clients;
 
-serverObject setupServer() {
-    serverObject newServer = emptyServer;
-
-    if (openFifo("/tmp/serv_fifo", &newServer.serverFifo, FIFO_READONLY) < 0)
-        printf("Error : name of the error \n");
-
-    if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
-        printf("Error: signal\n");
-
-    return newServer;
-}
-
-ClientContext* searchClient(serverObject* server, __pid_t clientPID) {
-    ClientList* list = server->clients;
+/*
+static ClientContext* searchClient(IOClient* clientIO) {
+    ClientList* list = clients;
 
     while (list) {
-        if (((ClientContext*)list->data)->clientPID == clientPID)
+        if (((ClientContext*)list->data)->clientIO == clientIO)
             return (ClientContext*)list->data;
         list = list->next;
     }
     return NULL;
 }
+*/
 
-ClientContext* addClient(serverObject* server, __pid_t clientPID) {
-    ClientContext* newClient = (ClientContext*)calloc(1, sizeof(ClientContext));
-    char* clientFifoPath = NULL;
-
-    newClient->clientPID = clientPID;
-    asprintf(&clientFifoPath, "/tmp/cli_%d_fifo", clientPID);
-    if (openFifo(clientFifoPath, &newClient->clientFifo, FIFO_WRITEONLY) < 0) {
-        free(clientFifoPath);
-        return NULL;
-    }
-    free(clientFifoPath);
-    if (pthread_mutex_init(&newClient->vmState, NULL) || pthread_mutex_init(&newClient->fifoState, NULL)) {
-        printf("Error: Couldn't init client mutexes\n");
-        return NULL;
-    }
-    printf("New client [%d] CONNECTED !\n", clientPID);
-    return (ClientContext*)AppendRefToLinkedList(&server->clients, newClient)->data;
-}
-
-void removeClient(serverObject *server, ClientContext* client) {
+static void removeClient(ClientContext* client) {
     VirtualMachine* currentVM = NULL;
     VMList* clientVMS = client->vms;
 
@@ -82,7 +55,7 @@ void removeClient(serverObject *server, ClientContext* client) {
     // Kill and free all of the client's vms
     while (clientVMS) {
         currentVM = (VirtualMachine*)clientVMS->data;
-        printf("Killing client [%d] VM_PID [%lu]\n", client->clientPID, currentVM->vmProcess);
+        printf("Killing client [%p] VM_PID [%lu]\n", (void*)client->clientIO, currentVM->vmProcess);
         pthread_cancel(currentVM->vmProcess);
 
         removeItem(client, currentVM->noVM);
@@ -90,86 +63,104 @@ void removeClient(serverObject *server, ClientContext* client) {
     }
 
     // free the client itself
-    close(client->clientFifo);
+    //close(client->clientFifo);
     pthread_mutex_unlock(&client->vmState);
     pthread_mutex_unlock(&client->fifoState);
     pthread_mutex_destroy(&client->vmState);
     pthread_mutex_destroy(&client->fifoState);
     FreeLinkedList(&client->vms);
 
-    node = SearchDataInList(&server->clients, client);
+    node = SearchDataInList(&clients, client);
     if (!node) {
         printf("Client not found !\n");
     }
 
     DeleteLinkedListNode(node);
 
-    printf("Client [%d] Removed !\n", client->clientPID);
+    printf("Client [%p] Removed !\n", (void*)client->clientIO);
 }
 
-void processClientsTransaction(serverObject* server, ClientContext* client, char* queryBuffer) {
+static void* processClientsTransaction(void* args) {
+    ClientContext* client = (ClientContext*)args;
+    char buffer[1024];
     char* queryPointer = NULL;
-    char* query = NULL;
 
     if (!client)
-        return;
+        return NULL;
 
-    if (queryBuffer)
-        printf("Query from [%d] >%s<\n", client->clientPID, queryBuffer);
-    query = strtok_r(queryBuffer, " ", &queryPointer);
-        
-    if (!query)
-        return;
-    switch (toupper(query[0])) {
-        case 'A':
-            addItem(client);
-            break;
+    printf("New client [%p] CONNECTED !\n", (void*)client->clientIO);
 
-        case 'L':
-            {
-                char* nStart = NULL, *nEnd = NULL;
-                NonNull(nStart = strtok_r(NULL, "-", &queryPointer));
-                NonNull(nEnd = strtok_r(NULL, " ", &queryPointer));
-                listItems(client, atoi(nStart), atoi(nEnd));
-            }
-            break;
+    IOWrite(client->clientIO, "Welcome !\n");
 
-        case 'E':
-            {
-                char* noVM = NULL;
-                NonNull(noVM = strtok_r(NULL, " ", &queryPointer));
-                removeItem(client, atoi(noVM));
-            }
-            break;
+    while (true) {
+        IORead(client->clientIO, buffer, 1024);
+        printf("Query from [%p] >%s<\n", (void*)client->clientIO, buffer);
+            
+        switch (toupper(buffer[0])) {
+            case 'A':
+                addItem(client);
+                break;
 
-        case 'X':
-            {
-                char* noVM = NULL, *fileName = NULL;
-                NonNull(noVM = strtok_r(NULL, " ", &queryPointer));
-                NonNull(fileName = strtok_r(NULL, " ", &queryPointer));
-                fileName[strlen(fileName)] = 0;
-                dispatchJob(client, atoi(noVM), fileName);
-            }
-            break;
+            case 'L':
+                {
+                    char* nStart = NULL, *nEnd = NULL;
+                    NonNull(nStart = strtok_r(NULL, "-", &queryPointer), NULL);
+                    NonNull(nEnd = strtok_r(NULL, " ", &queryPointer), NULL);
+                    listItems(client, atoi(nStart), atoi(nEnd));
+                }
+                break;
 
-        case 'Q':
-            {
-                printf("Client [%d] DISCONNECTED !\n", client->clientPID);
-                removeClient(server, client);
-            }
-            break;
+            case 'E':
+                {
+                    char* noVM = NULL;
+                    NonNull(noVM = strtok_r(NULL, " ", &queryPointer), NULL);
+                    removeItem(client, atoi(noVM));
+                }
+                break;
 
-        default: // Ignores malformed querries
-	        dprintf(client->clientFifo, "Unrecognized query.");
-            break;
+            case 'X':
+                {
+                    char* noVM = NULL, *fileName = NULL;
+                    NonNull(noVM = strtok_r(NULL, " ", &queryPointer), NULL);
+                    NonNull(fileName = strtok_r(NULL, " ", &queryPointer), NULL);
+                    fileName[strlen(fileName)] = 0;
+                    dispatchJob(client, atoi(noVM), fileName);
+                }
+                break;
+
+            case 'Q':
+                {
+                    printf("Client [%p] DISCONNECTED !\n", (void*)client->clientIO);
+                    removeClient(client);
+                }
+                break;
+
+            default: // Ignores malformed querries
+                //dprintf(client->clientFifo, "Unrecognized query.");
+                break;
+        }
     }
+
+    return NULL;
 }
 
-void checkClients(serverObject* server) {
-    ClientList* clientList = NULL;
+static void addClient(IOClient* clientIO) {
+    ClientContext* newClient = (ClientContext*)calloc(1, sizeof(ClientContext));
+
+    newClient->clientIO = clientIO;
+    if (pthread_mutex_init(&newClient->vmState, NULL) || pthread_mutex_init(&newClient->fifoState, NULL)) {
+        printf("Error: Couldn't init client mutexes\n");
+        return;
+    }
+    pthread_create(&newClient->clientThread, NULL, processClientsTransaction, AppendRefToLinkedList(&clients, newClient)->data);
+}
+
+/*
+static void checkClients() {
+    ClientList* clientList = clients;
     ClientContext* client;
 
-    clientList = server->clients;
+    
     while (clientList) {
         client = (ClientContext*)clientList->data;
         clientList = clientList->next;
@@ -179,69 +170,52 @@ void checkClients(serverObject* server) {
         if (checkFifo(client->clientFifo) == -1){
             // FreeClient
             printf("Client [%d] CRASHED !\n", client->clientPID);
-            removeClient(server, client);
+            removeClient(client);
             continue;
-        } /*else {
-            printf("Client [%d] VALID\n", client->clientPID);
-        }*/
+        }
         pthread_mutex_unlock(&client->fifoState);
 
     }
+    
 }
+*/
 
 /*
     Will check clients fifos at a regular interval to free their context if they disconnects,
     without notifying the server beforehand.
 */
-void* threadedClientCheck(void* args) {
+/*
+static void* threadedClientCheck(void* args) {
     while (true) {
-        checkClients((serverObject*)args);
+        checkClients();
         sleep(1);
     }
 
     return NULL;
+}*/
+
+void setupServer() {
+    IOInit();
 }
 
-int processClients(serverObject* server) {
-    #define transactionBufferSize 100
-    char transactionBuffer[transactionBufferSize] = "";
-    ssize_t nbOfCharactersRead = 0;
-    char* slicePointer = NULL;
-    char* token = NULL;
-    __pid_t clientPID = 0;
-    ClientContext* client = NULL;
-    pthread_t clientCheckThread;
 
-    // Todo check for errors
-    pthread_create(&clientCheckThread, NULL, &threadedClientCheck, server);
+void processClients() {
+    #define bufferSize 100
+    char buffer[bufferSize];
+    IOClient* newClient = NULL;
 
-    // Process incomming querries
-    while ((nbOfCharactersRead = read(server->serverFifo, transactionBuffer, transactionBufferSize - 1)) != -1) {
-        if (nbOfCharactersRead == 0) { // If we have a broken pipe then we wait a hot second for clients to connect
-            sleep(1);
-            continue;
-        }
-        strtok(transactionBuffer, "\n");
-        if (!(token = strtok_r(transactionBuffer, " ", &slicePointer)))
-            continue; // Ignnore malformed querries
-        clientPID = atoi(token);
+    // Listening for clients connections
+    while ((newClient = IOGetClient())){
+        memset(buffer, 0, bufferSize);
+        IORead(newClient, buffer, bufferSize);
 
-        // Search for client and create it if not found
-        if (!(client = searchClient(server, clientPID)))
-            client = addClient(server, clientPID);
-
-        // Process the lient query
-        processClientsTransaction(server, client, slicePointer);
-        
-        memset(transactionBuffer, 0, sizeof(transactionBuffer));
+        addClient(newClient);
     }
-
-    pthread_cancel(clientCheckThread);
-
-    return 0;
 }
 
-void cleanupServer(serverObject* server) {
+void cleanupServer() {
+    /*
     if (closeFifo(&server->serverFifo) < 0)
         printf("Error : name of the error \n");
+        */
 }

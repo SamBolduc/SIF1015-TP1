@@ -21,14 +21,13 @@
     #include <pthread.h>
     #include <stdbool.h>
     #include "linkedList.h"
-    #include "fifoManager.h"
 
     #define VM_SEGMENT_SIZE 65536
 
     typedef LinkedList VMList;
     typedef struct {
         pthread_mutex_t* consoleState;
-        fifoFileDescriptor* console;
+        //fifoFileDescriptor* console;
         unsigned int   noVM;
         unsigned char  busy;
         unsigned short *ptrDebutVM;

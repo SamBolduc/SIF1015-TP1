@@ -19,14 +19,9 @@
 #define _SERVER_H
 
     #include "client.h"
-
-    typedef struct {
-        fifoFileDescriptor serverFifo;
-        ClientList* clients;
-    } serverObject;
     
-    serverObject setupServer();
-    int          processClients(serverObject* server);
-    void         cleanupServer(serverObject* server);
+    void setupServer();
+    void processClients();
+    void cleanupServer();
 
 #endif
