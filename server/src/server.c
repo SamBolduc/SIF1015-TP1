@@ -49,6 +49,7 @@ static ClientContext* searchClient(IOClient* clientIO) {
 static void removeClient(ClientContext* client) {
     VirtualMachine* currentVM = NULL;
     VMList* clientVMS = client->vms;
+    void* clientID = client->clientIO;
 
     LinkedList** node = NULL;
 
@@ -75,9 +76,13 @@ static void removeClient(ClientContext* client) {
         printf("Client not found !\n");
     }
 
+    IOCloseClient(client->clientIO);
     DeleteLinkedListNode(node);
+    free(client);
 
-    printf("Client [%p] Removed !\n", (void*)client->clientIO);
+    printf("Client [%p] Removed !\n", clientID);
+
+    pthread_exit(NULL);
 }
 
 static void* processClientsTransaction(void* args) {
@@ -148,6 +153,7 @@ static void* processClientsTransaction(void* args) {
 }
 
 static void addClient(IOClient* clientIO) {
+    pthread_t clientThread;
     ClientContext* newClient = (ClientContext*)calloc(1, sizeof(ClientContext));
 
     newClient->clientIO = clientIO;
@@ -155,7 +161,10 @@ static void addClient(IOClient* clientIO) {
         printf("Error: Couldn't init client mutexes\n");
         return;
     }
-    pthread_create(&newClient->clientThread, NULL, processClientsTransaction, AppendRefToLinkedList(&clients, newClient)->data);
+
+    AppendRefToLinkedList(&clients, newClient);
+    pthread_create(&clientThread, NULL, processClientsTransaction, newClient);
+    pthread_detach(clientThread);
 }
 
 /*

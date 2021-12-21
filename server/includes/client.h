@@ -26,7 +26,6 @@
 
     typedef struct {
         IOClient* clientIO; // formely CLientPID
-        pthread_t clientThread;
         unsigned int nbVM;
         VMList* vms;
         pthread_mutex_t vmState;
