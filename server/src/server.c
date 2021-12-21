@@ -65,9 +65,9 @@ static void removeClient(ClientContext* client) {
     // free the client itself
     //close(client->clientFifo);
     pthread_mutex_unlock(&client->vmState);
-    pthread_mutex_unlock(&client->fifoState);
+    pthread_mutex_unlock(&client->ioState);
     pthread_mutex_destroy(&client->vmState);
-    pthread_mutex_destroy(&client->fifoState);
+    pthread_mutex_destroy(&client->ioState);
     FreeLinkedList(&client->vms);
 
     node = SearchDataInList(&clients, client);
@@ -84,6 +84,7 @@ static void* processClientsTransaction(void* args) {
     ClientContext* client = (ClientContext*)args;
     char buffer[1024];
     char* queryPointer = NULL;
+    char* token = NULL;
 
     if (!client)
         return NULL;
@@ -96,7 +97,8 @@ static void* processClientsTransaction(void* args) {
         IORead(client->clientIO, buffer, 1024);
         printf("Query from [%p] >%s<\n", (void*)client->clientIO, buffer);
             
-        switch (toupper(buffer[0])) {
+        token = strtok_r(buffer, " \n\0", &queryPointer);
+        switch (toupper(token[0])) {
             case 'A':
                 addItem(client);
                 break;
@@ -104,7 +106,7 @@ static void* processClientsTransaction(void* args) {
             case 'L':
                 {
                     char* nStart = NULL, *nEnd = NULL;
-                    NonNull(nStart = strtok_r(buffer, "-", &queryPointer), NULL);
+                    NonNull(nStart = strtok_r(NULL, "-", &queryPointer), NULL);
                     NonNull(nEnd = strtok_r(NULL, " ", &queryPointer), NULL);
                     listItems(client, atoi(nStart), atoi(nEnd));
                 }
@@ -113,7 +115,7 @@ static void* processClientsTransaction(void* args) {
             case 'E':
                 {
                     char* noVM = NULL;
-                    NonNull(noVM = strtok_r(buffer, " ", &queryPointer), NULL);
+                    NonNull(noVM = strtok_r(NULL, " ", &queryPointer), NULL);
                     removeItem(client, atoi(noVM));
                 }
                 break;
@@ -121,7 +123,7 @@ static void* processClientsTransaction(void* args) {
             case 'X':
                 {
                     char* noVM = NULL, *fileName = NULL;
-                    NonNull(noVM = strtok_r(buffer, " ", &queryPointer), NULL);
+                    NonNull(noVM = strtok_r(NULL, " ", &queryPointer), NULL);
                     NonNull(fileName = strtok_r(NULL, " ", &queryPointer), NULL);
                     fileName[strlen(fileName)] = 0;
                     dispatchJob(client, atoi(noVM), fileName);
@@ -136,9 +138,10 @@ static void* processClientsTransaction(void* args) {
                 break;
 
             default: // Ignores malformed querries
-                //dprintf(client->clientFifo, "Unrecognized query.");
+                IOWrite(client->clientIO, "Unrecognized query.");
                 break;
         }
+        memset(buffer, 0, 1024);
     }
 
     return NULL;
@@ -148,7 +151,7 @@ static void addClient(IOClient* clientIO) {
     ClientContext* newClient = (ClientContext*)calloc(1, sizeof(ClientContext));
 
     newClient->clientIO = clientIO;
-    if (pthread_mutex_init(&newClient->vmState, NULL) || pthread_mutex_init(&newClient->fifoState, NULL)) {
+    if (pthread_mutex_init(&newClient->vmState, NULL) || pthread_mutex_init(&newClient->ioState, NULL)) {
         printf("Error: Couldn't init client mutexes\n");
         return;
     }
@@ -165,7 +168,7 @@ static void checkClients() {
         client = (ClientContext*)clientList->data;
         clientList = clientList->next;
 
-        pthread_mutex_lock(&client->fifoState);
+        pthread_mutex_lock(&client->ioState);
         // Check if the clients is disconnected
         if (checkFifo(client->clientFifo) == -1){
             // FreeClient
@@ -173,7 +176,7 @@ static void checkClients() {
             removeClient(client);
             continue;
         }
-        pthread_mutex_unlock(&client->fifoState);
+        pthread_mutex_unlock(&client->ioState);
 
     }
     

@@ -23,6 +23,7 @@ int main(int argc, char** argv) {
     setupServer();
 
     // listening for connections
+    printf("Listening for clients ...\n");
     processClients();
 
     // cleanup

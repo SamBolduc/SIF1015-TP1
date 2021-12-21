@@ -221,10 +221,7 @@ int executeFile(VirtualMachine* VM, char* sourcefname){
 	memory = VM->ptrDebutVM;
     if (!read_image_file(memory, sourcefname, &origin)) {
         pthread_mutex_lock(VM->consoleState);
-        /*
-        if (checkFifo(*VM->console) != -1)
-            dprintf(*VM->console, "VM %d : Failed to load image: %s\n", VM->noVM, sourcefname);
-            */
+        IOWrite(VM->console, "VM %d : Failed to load image: %s\n", VM->noVM, sourcefname);
         pthread_mutex_unlock(VM->consoleState);
         VM->busy = false;
         return 0;
@@ -265,9 +262,7 @@ int executeFile(VirtualMachine* VM, char* sourcefname){
                         uint16_t r2 = instr & 0x7;
                         reg[r0] = reg[r1] + reg[r2];
                         pthread_mutex_lock(VM->consoleState);
-                        /*
-                        if (checkFifo(*VM->console) != -1)
-                            dprintf(*VM->console, "\nVM %d : add reg[r0] (sum) = %d", VM->noVM, reg[r0]);*/
+                        IOWrite(VM->console, "\nVM %d : add reg[r0] (sum) = %d", VM->noVM, reg[r0]);
                         pthread_mutex_unlock(VM->consoleState);
                         /* printf("\t add reg[r1] (sum avant) = %d", reg[r1]); */
                         /* printf("\t add reg[r2] (valeur ajoutee) = %d", reg[r2]); */
@@ -446,8 +441,7 @@ int executeFile(VirtualMachine* VM, char* sourcefname){
                         /* TRAP IN */
                         {
                             pthread_mutex_lock(VM->consoleState);
-                            /*if (checkFifo(*VM->console) != -1)
-                                dprintf(*VM->console, "VM %d : Enter a character: ", VM->noVM);*/
+                            IOWrite(VM->console, "VM %d : Enter a character: ", VM->noVM);
                             pthread_mutex_unlock(VM->consoleState);
                             c = getchar();
                             putc(c, stdout);
@@ -476,8 +470,7 @@ int executeFile(VirtualMachine* VM, char* sourcefname){
                     case TRAP_HALT:
                         /* TRAP HALT */
                         pthread_mutex_lock(VM->consoleState);
-                        /*if (checkFifo(*VM->console) != -1)
-                            dprintf(*VM->console, "\n HALT\n");*/
+                        IOWrite(VM->console, "\n HALT\n");
                         pthread_mutex_unlock(VM->consoleState);
                         fflush(stdout);
                         running = 0;
@@ -511,8 +504,7 @@ void* virtualMachine(void* args) {
         if (self->binaryList) {
             
             pthread_mutex_lock(self->consoleState);
-            /*if (checkFifo(*self->console) != -1)
-                dprintf(*self->console, "VM %d executing ! %s\n", self->noVM, (char*)self->binaryList->data);*/
+            IOWrite(self->console, "VM %d executing ! %s\n", self->noVM, (char*)self->binaryList->data);
             pthread_mutex_unlock(self->consoleState);
             
             executeFile(self, self->binaryList->data); /* Executing Current Job */

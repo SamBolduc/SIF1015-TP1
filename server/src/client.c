@@ -35,8 +35,8 @@ void addItem(ClientContext* client) {
     /* Affectation des valeurs des champs */
     newVM->noVM = ++client->nbVM;
     newVM->ptrDebutVM = (unsigned short*)malloc(sizeof(unsigned short)*VM_SEGMENT_SIZE);
-    newVM->consoleState = &client->fifoState;
-    //newVM->console = &client->clientFifo;
+    newVM->consoleState = &client->ioState;
+    newVM->console = client->clientIO;
     
     pthread_mutex_lock(&client->vmState); /* Lock head */
     
@@ -86,6 +86,8 @@ void removeItem(ClientContext* client, const unsigned int noVM) {
             ((VirtualMachine*)VM->data)->noVM--;
         VM = VM->next;
     }
+
+    IOWrite(client->clientIO, "Flagged VM %d for deletion\n", noVM);
 }
 
 /*
@@ -104,7 +106,7 @@ void listItems(ClientContext* client, const int start, const int end) {
 
     /* Affichage des entêtes de colonnes */
     pthread_mutex_lock(&client->vmState); /* Lock head */
-    pthread_mutex_lock(&client->fifoState); /* Lock console */
+    pthread_mutex_lock(&client->ioState); /* Lock console */
 
     IOWrite(client->clientIO, "noVM    Busy?    Adresse Debut VM        kill ?              \n");
     IOWrite(client->clientIO, "=============================================================\n");
@@ -119,14 +121,20 @@ void listItems(ClientContext* client, const int start, const int end) {
     // Affichage des pieds de colonnes
     IOWrite(client->clientIO, "=============================================================\n\n");
 
-    pthread_mutex_unlock(&client->fifoState); /* Unlock console */
+    pthread_mutex_unlock(&client->ioState); /* Unlock console */
     pthread_mutex_unlock(&client->vmState); /* Unlock head */
 }
 
 int dispatchJob(ClientContext* client, int noVM, char* sourcefname) {
     LinkedList *VM = findItem(client, noVM);
     
-    pthread_mutex_lock(&client->fifoState);
+    pthread_mutex_lock(&client->ioState);
+
+    if (!VM) {
+        IOWrite(client->clientIO, "Couldn't dispatch job %s ! No such VM %d !\n", sourcefname, noVM);
+        pthread_mutex_unlock(&client->ioState);
+        return 1;
+    }
 
     if (!((VirtualMachine*)VM->data)->kill){
         IOWrite(client->clientIO, "Job %s dispatched to vm %d !\n", sourcefname, noVM);        
@@ -135,7 +143,7 @@ int dispatchJob(ClientContext* client, int noVM, char* sourcefname) {
         IOWrite(client->clientIO, "Couldn't dispatch job %s ! VM %d already flagged for deletion !\n", sourcefname, noVM);
     }
 
-    pthread_mutex_unlock(&client->fifoState);
+    pthread_mutex_unlock(&client->ioState);
 
-    return(1);
+    return 1;
 }

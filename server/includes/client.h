@@ -30,7 +30,7 @@
         unsigned int nbVM;
         VMList* vms;
         pthread_mutex_t vmState;
-        pthread_mutex_t fifoState;
+        pthread_mutex_t ioState;
     } ClientContext;
 
     void addItem(ClientContext* client);
