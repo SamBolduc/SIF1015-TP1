@@ -106,6 +106,7 @@ static void* processClientsTransaction(void* args) {
 
     while (true) {
         if (IORead(client->clientIO, buffer, 1024) == -1){
+            printf("Client [%p] CRASHED !\n", (void*)client->clientIO);
             removeClient(client);
         }
         printf("Query from [%p] >%s<\n", (void*)client->clientIO, buffer);
@@ -175,49 +176,9 @@ static void addClient(IOClient* clientIO) {
     pthread_detach(clientThread);
 }
 
-/*
-static void checkClients() {
-    ClientList* clientList = clients;
-    ClientContext* client;
-
-    
-    while (clientList) {
-        client = (ClientContext*)clientList->data;
-        clientList = clientList->next;
-
-        pthread_mutex_lock(&client->ioState);
-        // Check if the clients is disconnected
-        if (checkFifo(client->clientFifo) == -1){
-            // FreeClient
-            printf("Client [%d] CRASHED !\n", client->clientPID);
-            removeClient(client);
-            continue;
-        }
-        pthread_mutex_unlock(&client->ioState);
-
-    }
-    
-}
-*/
-
-/*
-    Will check clients fifos at a regular interval to free their context if they disconnects,
-    without notifying the server beforehand.
-*/
-/*
-static void* threadedClientCheck(void* args) {
-    while (true) {
-        checkClients();
-        sleep(1);
-    }
-
-    return NULL;
-}*/
-
 void setupServer() {
     IOInit();
 }
-
 
 void processClients() {
     #define bufferSize 100
