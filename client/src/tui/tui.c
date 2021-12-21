@@ -4,11 +4,15 @@
 #include "send_tui.h"
 
 #include <pthread.h>
+#include <string.h>
 
 static pthread_mutex_t ncursesMutex;
 
 void InitNcurses() {
     initscr();
+    raw();
+    keypad(stdscr, true);
+    noecho();
     pthread_mutex_init(&ncursesMutex, NULL);
 }
 
@@ -17,17 +21,25 @@ void CloseNcurses() {
     pthread_mutex_destroy(&ncursesMutex);
 }
 
-WINDOW* CreateNewNcursesWindow(unsigned int Y, unsigned int X, unsigned int H, unsigned int W) {
-    WINDOW* newNcursesWindow = NULL;
-
-    newNcursesWindow = newwin(H, W, Y, X);
-    box(newNcursesWindow, 0, 0);
-
-    return newNcursesWindow;
+static void DrawWindowTitle(WINDOW* window, char* title) {
+    mvwprintw(window, 0, 2, "| %s |", title);
 }
 
-void DrawWindowTitle(WINDOW* window, char* title) {
-    mvwprintw(window, 0, 2, "| %s |", title);
+void DrawNcursesWindow(NcursesWindow* window) {
+    box(window->window, 0, 0);
+    DrawWindowTitle(window->window, window->title);
+    wrefresh(window->window);
+}
+
+NcursesWindow CreateNewNcursesWindow(char* title, unsigned int Y, unsigned int X, unsigned int H, unsigned int W) {
+    NcursesWindow newNcursesWindow = {0};
+
+    newNcursesWindow.window = newwin(H, W, Y, X);
+    strcpy(newNcursesWindow.title, title);
+
+    DrawNcursesWindow(&newNcursesWindow);
+
+    return newNcursesWindow;
 }
 
 /*
@@ -41,8 +53,8 @@ void StartTui() {
 }
 
 void WaitTui() {
-    WaitReceiveTui();
     WaitSendTui();
+    CancelReceiveTui();
 
     CloseNcurses();
 }

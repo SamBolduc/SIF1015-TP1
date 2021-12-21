@@ -10,30 +10,28 @@ static pthread_t receiveThread;
 static pthread_mutex_t* ncursesMutexPointer;
 
 static void* ReceiveTuiThread(void* args) {
-    WINDOW* receiveWindow;
+    NcursesWindow receiveWindow;
     char buffer[1024] = {0};
     char* line = NULL;
     unsigned int currentLine = 1;
 
     pthread_mutex_lock(ncursesMutexPointer);
-    receiveWindow = CreateNewNcursesWindow(0, 0, LINES / 2, 0);
+    receiveWindow = CreateNewNcursesWindow("Receive Window", 0, 0, LINES / 2, 0);
     pthread_mutex_unlock(ncursesMutexPointer);
 
     while (true) {
         pthread_mutex_lock(ncursesMutexPointer);
-        DrawWindowTitle(receiveWindow, "Receive Window");
 
         ReadFromServer(buffer, 1024);
         if (buffer[0]) {
-            line = strtok(buffer, "\n");
+            line = strtok(buffer, "\n\0");
             do {
-                mvwprintw(receiveWindow, currentLine, 2, line);
+                mvwprintw(receiveWindow.window, currentLine, 2, line);
                 currentLine++;
             } while ((line = strtok(NULL, "\n")));
-            currentLine++;
             memset(buffer, 0, 1024);
+            wrefresh(receiveWindow.window);
         }
-        wrefresh(receiveWindow);
         pthread_mutex_unlock(ncursesMutexPointer);
     }
 
@@ -45,6 +43,6 @@ void StartReciveTui(pthread_mutex_t* ncursesMutex) {
     pthread_create(&receiveThread, NULL, ReceiveTuiThread, NULL);
 }
 
-void WaitReceiveTui() {
-    pthread_join(receiveThread, NULL);
+void CancelReceiveTui() {
+    pthread_cancel(receiveThread);
 }

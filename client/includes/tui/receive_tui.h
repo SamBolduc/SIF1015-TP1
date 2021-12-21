@@ -4,6 +4,6 @@
     #include <pthread.h>
 
     void StartReciveTui(pthread_mutex_t* ncursesMutex);
-    void WaitReceiveTui();
+    void CancelReceiveTui();
 
 #endif

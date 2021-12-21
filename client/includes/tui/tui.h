@@ -3,9 +3,14 @@
 
     #include <ncurses.h>
 
-    WINDOW* CreateNewNcursesWindow(unsigned int Y, unsigned int X, unsigned int H, unsigned int W);
-    void    DrawWindowTitle(WINDOW* window, char* title);
-    void    StartTui();
-    void    WaitTui();
+    typedef struct {
+        WINDOW* window;
+        char title[100];
+    } NcursesWindow;
+
+    void          DrawNcursesWindow(NcursesWindow* window);
+    NcursesWindow CreateNewNcursesWindow(char* title, unsigned int Y, unsigned int X, unsigned int H, unsigned int W);
+    void          StartTui();
+    void          WaitTui();
 
 #endif
