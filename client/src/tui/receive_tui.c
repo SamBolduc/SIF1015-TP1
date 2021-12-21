@@ -17,6 +17,7 @@ static void* ReceiveTuiThread(void* args) {
 
     pthread_mutex_lock(ncursesMutexPointer);
     receiveWindow = CreateNewNcursesWindow("Receive Window", 0, 0, LINES / 2, 0);
+    scrollok(receiveWindow.window, true);
     pthread_mutex_unlock(ncursesMutexPointer);
 
     while (true) {
@@ -26,11 +27,18 @@ static void* ReceiveTuiThread(void* args) {
         if (buffer[0]) {
             line = strtok(buffer, "\n\0");
             do {
-                mvwprintw(receiveWindow.window, currentLine, 2, line);
                 currentLine++;
+                // Scroll routine
+                if (currentLine >= LINES / 2 - 1) {
+                    wscrl(receiveWindow.window, 5);
+                    currentLine -= 5;
+                    wmove(receiveWindow.window, currentLine, 0);
+                    wclrtoeol(receiveWindow.window);
+                }
+                mvwprintw(receiveWindow.window, currentLine, 2, line);
             } while ((line = strtok(NULL, "\n")));
             memset(buffer, 0, 1024);
-            wrefresh(receiveWindow.window);
+            DrawNcursesWindow(&receiveWindow);
         }
         pthread_mutex_unlock(ncursesMutexPointer);
     }
