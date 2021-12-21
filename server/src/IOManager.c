@@ -62,10 +62,13 @@ void IOCloseClient(IOClient* client) {
     free(client);
 }
 
-void IORead(IOClient* client, char* buffer, size_t length) {
+// Return 0 on error / client disconnection
+int IORead(IOClient* client, char* buffer, size_t length) {
     if (!client | !buffer)
-        return;
-    read(client->socket, buffer, length);
+        return -1;
+    if(!read(client->socket, buffer, length))
+        return -1;
+    return 0;
 }
 
 void IOWrite(IOClient* client, char* format, ...) {
@@ -79,7 +82,8 @@ void IOWrite(IOClient* client, char* format, ...) {
     vasprintf(&buffer, format, vaargs);
     va_end(vaargs);
 
-    send(client->socket, buffer, strlen(buffer), 0);
+    // MSG_NOSIGNAL -> no sigpipe exception if connection closed
+    send(client->socket, buffer, strlen(buffer), MSG_NOSIGNAL);
 
     free(buffer);
 }

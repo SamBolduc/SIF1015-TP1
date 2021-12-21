@@ -8,7 +8,7 @@
     void      IOInit();
     IOClient* IOGetClient();
     void      IOCloseClient(IOClient* client);
-    void      IORead(IOClient* client, char* buffer, size_t length);
+    int       IORead(IOClient* client, char* buffer, size_t length);
     void      IOWrite(IOClient* client, char* format, ...);
 
 #endif

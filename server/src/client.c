@@ -43,8 +43,10 @@ void addItem(ClientContext* client) {
     newVM = AppendRefToLinkedList(&client->vms, newVM)->data; /* Add the VM to the linked list */
     pthread_create(&newVM->vmProcess, NULL, &virtualMachine, newVM); /* Create the VM in a new thread */
 
+    pthread_mutex_lock(&client->ioState);
     IOWrite(client->clientIO, "New VM => #%d \t Pointer: %p \t\n", newVM->noVM, (void*)newVM->ptrDebutVM);
-    
+    pthread_mutex_unlock(&client->ioState);
+
     pthread_mutex_unlock(&client->vmState); /* Unlock head */
 }
 

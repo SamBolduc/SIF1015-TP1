@@ -54,6 +54,10 @@ static void removeClient(ClientContext* client) {
     LinkedList** node = NULL;
 
     // Kill and free all of the client's vms
+
+    pthread_mutex_lock(&client->vmState);
+    pthread_mutex_lock(&client->ioState);
+
     while (clientVMS) {
         currentVM = (VirtualMachine*)clientVMS->data;
         printf("Killing client [%p] VM_PID [%lu]\n", (void*)client->clientIO, currentVM->vmProcess);
@@ -96,10 +100,14 @@ static void* processClientsTransaction(void* args) {
 
     printf("New client [%p] CONNECTED !\n", (void*)client->clientIO);
 
-    IOWrite(client->clientIO, "Welcome ! Little one\n");
+    pthread_mutex_lock(&client->ioState);
+    IOWrite(client->clientIO, "Welcome user [%p]\n", (void*)client->clientIO);
+    pthread_mutex_unlock(&client->ioState);
 
     while (true) {
-        IORead(client->clientIO, buffer, 1024);
+        if (IORead(client->clientIO, buffer, 1024) == -1){
+            removeClient(client);
+        }
         printf("Query from [%p] >%s<\n", (void*)client->clientIO, buffer);
             
         token = strtok_r(buffer, " \n\0", &queryPointer);
@@ -121,7 +129,9 @@ static void* processClientsTransaction(void* args) {
                 {
                     char* noVM = NULL;
                     NonNull(noVM = strtok_r(NULL, " ", &queryPointer), NULL);
+                    pthread_mutex_lock(&client->ioState);
                     removeItem(client, atoi(noVM));
+                    pthread_mutex_unlock(&client->ioState);
                 }
                 break;
 
