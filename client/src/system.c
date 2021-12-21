@@ -10,12 +10,6 @@
 static int socketFileDiscriptor;
 static struct sockaddr_in serverAddress;
 
-void ServerHandShake() {
-    char* buffer = "Hello World";
-
-    send(socketFileDiscriptor, buffer, strlen(buffer), 0);
-}
-
 void ReadFromServer(char* buffer, size_t length) {
     if (!buffer)
         return;
@@ -48,7 +42,6 @@ void ConnectToServer() {
         sleep(1);
     }
 
-    ServerHandShake();
     printf("Connected !\n");
     sleep(1);
 }

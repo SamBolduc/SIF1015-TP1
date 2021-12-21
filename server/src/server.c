@@ -181,15 +181,10 @@ void setupServer() {
 }
 
 void processClients() {
-    #define bufferSize 100
-    char buffer[bufferSize];
     IOClient* newClient = NULL;
 
     // Listening for clients connections
     while ((newClient = IOGetClient())){
-        memset(buffer, 0, bufferSize);
-        IORead(newClient, buffer, bufferSize);
-
         addClient(newClient);
     }
 }
