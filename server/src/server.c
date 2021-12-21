@@ -143,7 +143,20 @@ static void* processClientsTransaction(void* args) {
                     dispatchJob(client, atoi(noVM), fileName);
                 }
                 break;
-
+            case 'S':
+                {
+                    char* noVM = NULL, *fileName = NULL;
+                    NonNull(noVM = strtok_r(NULL, " ", &queryPointer), NULL);
+                    NonNull(fileName = strtok_r(NULL, " ", &queryPointer), NULL);
+                    fileName[strlen(fileName)] = 0;
+                    showStat(client, atoi(noVM), fileName);
+                }
+                break;
+            case 'F':
+                {
+                    listFiles(client);
+                }
+                break;
             case 'Q':
                 {
                     printf("Client [%p] DISCONNECTED !\n", (void*)client->clientIO);

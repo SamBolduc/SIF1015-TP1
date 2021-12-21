@@ -22,6 +22,53 @@
 #include <stdio.h>
 #include <string.h>
 
+
+void listFiles(ClientContext* client){
+    if (!client)
+        return;
+
+    pthread_mutex_lock(&client->ioState);
+    
+    char cmd[256];
+
+    snprintf(cmd, sizeof(cmd), "ls -l /proc/%d/fd", getpid());
+    FILE *ls = popen(cmd, "r");
+
+    char buf[256];
+    while (fgets(buf, sizeof(buf), ls) != 0) {
+        IOWrite(client->clientIO, buf);
+    }
+
+    pclose(ls);
+
+    pthread_mutex_unlock(&client->ioState);
+}
+
+void showStat(ClientContext* client, const unsigned int noVM, char* fileName){
+    VMList* VM = NULL;
+
+    if (!client)
+        return;
+    if (!(VM = findItem(client, noVM)))
+        return;
+
+    pthread_mutex_lock(&client->ioState);
+    
+    char cmd[256];
+
+    snprintf(cmd, sizeof(cmd), "stat %s", fileName);
+    FILE *stat = popen(cmd, "r");
+
+    char buf[256];
+    while (fgets(buf, sizeof(buf), stat) != 0) {
+        IOWrite(client->clientIO, buf);
+    }
+
+    pclose(stat);
+
+    pthread_mutex_unlock(&client->ioState);
+}
+
 /*
   #####################################################
   # Ajoute un item a la fin de la liste chaînée de VM
