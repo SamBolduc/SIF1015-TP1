@@ -27,12 +27,20 @@ static void* SendTuiThread(void* args) {
 
     pthread_mutex_lock(ncursesMutexPointer);
     sendWindow = CreateNewNcursesWindow("Send Window", LINES / 2, 0, LINES / 2, 0);
+    scrollok(sendWindow.window, true);
     nodelay(sendWindow.window, true);
     pthread_mutex_unlock(ncursesMutexPointer);
 
     while (running) {
         pthread_mutex_lock(ncursesMutexPointer);
 
+        if ((currentLine) >= (LINES / 2 - 1)) {
+            wscrl(sendWindow.window, 5);
+            currentLine -= 5;
+            wmove(sendWindow.window, currentLine, 0);
+            wclrtoeol(sendWindow.window);
+            DrawNcursesWindow(&sendWindow);
+        }
         mvwprintw(sendWindow.window, currentLine, 2, "Please enter your querry: %s", querryBuffer);
 
         // Update querry buffer
