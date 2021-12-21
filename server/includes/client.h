@@ -33,6 +33,7 @@
     } ClientContext;
 
     void addItem(ClientContext* client);
+    void freeVM(VirtualMachine* VM);
     void removeItem(ClientContext* client, const unsigned int noVM);
     void listItems(ClientContext* client, const int start, const int end);
     int  dispatchJob(ClientContext* client, int noVM, char* sourcefname);

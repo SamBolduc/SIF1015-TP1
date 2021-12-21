@@ -61,9 +61,9 @@ static void removeClient(ClientContext* client) {
     while (clientVMS) {
         currentVM = (VirtualMachine*)clientVMS->data;
         printf("Killing client [%p] VM_PID [%lu]\n", (void*)client->clientIO, currentVM->vmProcess);
+        currentVM->kill = true;
         pthread_cancel(currentVM->vmProcess);
-
-        removeItem(client, currentVM->noVM);
+        freeVM(currentVM);
         clientVMS = clientVMS->next;
     }
 
@@ -129,9 +129,7 @@ static void* processClientsTransaction(void* args) {
                 {
                     char* noVM = NULL;
                     NonNull(noVM = strtok_r(NULL, " ", &queryPointer), NULL);
-                    pthread_mutex_lock(&client->ioState);
                     removeItem(client, atoi(noVM));
-                    pthread_mutex_unlock(&client->ioState);
                 }
                 break;
 

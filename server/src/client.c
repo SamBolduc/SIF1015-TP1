@@ -50,6 +50,21 @@ void addItem(ClientContext* client) {
     pthread_mutex_unlock(&client->vmState); /* Unlock head */
 }
 
+void freeVM(VirtualMachine* VM) {
+    if (!VM)
+        return;
+    free(VM->ptrDebutVM);
+    {
+        LinkedList* list = VM->binaryList;
+        while (list) {
+            free(list->data);
+            list = list->next;
+        }
+    }
+    FreeLinkedList(&VM->binaryList);
+    free(VM);
+}
+
 VMList* findItem(ClientContext* client, const unsigned int noVM) {
     VMList* list = NULL;
 
@@ -89,7 +104,9 @@ void removeItem(ClientContext* client, const unsigned int noVM) {
         VM = VM->next;
     }
 
+    pthread_mutex_lock(&client->ioState);
     IOWrite(client->clientIO, "Flagged VM %d for deletion\n", noVM);
+    pthread_mutex_unlock(&client->ioState);
 }
 
 /*
